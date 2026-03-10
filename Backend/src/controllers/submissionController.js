@@ -1,18 +1,28 @@
+import Submission from "../models/Submission.js";
 import submissionQueue from "../queue/submissionQueue.js";
 
-export const submitCode = async(req,res)=>{
+export const submitCode = async (req,res)=>{
 
-  const {code,language,problemId} = req.body;
+  const {code,language,problemId,contestId} = req.body;
 
-  await submissionQueue.add("execute",{
+  const submission = await Submission.create({
+    user:req.user.id,
+    problem:problemId,
+    contest:contestId,
     code,
     language,
-    problemId,
-    userId:req.user.id
+    status:"Pending"
+  });
+
+  await submissionQueue.add("execute",{
+    submissionId:submission._id,
+    code,
+    problemId
   });
 
   res.json({
-    message:"Submission queued"
+    message:"Submission queued",
+    submissionId:submission._id
   });
 
 };

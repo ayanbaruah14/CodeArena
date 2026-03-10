@@ -31,7 +31,7 @@ const SubmissionSchema = new mongoose.Schema({
       "Runtime Error",
       "Compilation Error"
     ],
-    default:"Pending"
+    default:"In queue"
   }
 
 },{timestamps:true});

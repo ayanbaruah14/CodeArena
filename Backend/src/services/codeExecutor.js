@@ -1,19 +1,19 @@
 import { exec } from "child_process";
 import fs from "fs";
 
-const runCode = (code)=>{
+const runCode = (code, input) => {
 
-  return new Promise((resolve,reject)=>{
+  return new Promise((resolve, reject) => {
 
-    fs.writeFileSync("solution.cpp",code);
+    fs.writeFileSync("solution.cpp", code);
 
-    exec("g++ solution.cpp -o solution",(err)=>{
+    exec("g++ solution.cpp -o solution", (err) => {
 
-      if(err) return reject("Compilation Error");
+      if (err) return reject("Compilation Error");
 
-      exec("./solution",(err,stdout)=>{
+      exec(`echo "${input}" | ./solution`, (err, stdout) => {
 
-        if(err) return reject("Runtime Error");
+        if (err) return reject("Runtime Error");
 
         resolve(stdout);
 
