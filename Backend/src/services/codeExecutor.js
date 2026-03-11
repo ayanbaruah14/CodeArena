@@ -38,11 +38,15 @@ const runCode = (code, input) => {
       // detect timeout
       if (err) {
 
-        if (err.signal === "SIGTERM" || err.killed) {
-          return reject("Time Limit Exceeded");
-        }
+if (err) {
 
-        return reject(err);
+  // timeout command returns exit code 124
+  if (err.code === 124) {
+    return reject("Time Limit Exceeded");
+  }
+
+  return reject(err);
+}
       }
 
       resolve(stdout);
