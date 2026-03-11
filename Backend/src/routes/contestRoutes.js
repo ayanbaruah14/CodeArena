@@ -10,7 +10,7 @@ import adminMiddleware from "../middleware/adminMiddleware.js";
 
 const router = express.Router();
 
-router.post("/",authMiddleware,createContest);
+router.post("/",authMiddleware,adminMiddleware,createContest);//only admin can create contests
 
 router.get("/",getContests);
 
