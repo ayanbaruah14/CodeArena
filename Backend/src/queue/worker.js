@@ -9,21 +9,8 @@ import Submission from "../models/Submission.js";
 
 dotenv.config();
 
-/*
------------------------------------------
-Connect to MongoDB (worker is separate process)
------------------------------------------
-*/
-
 await mongoose.connect(process.env.MONGO_URI);
-
 console.log("Worker connected to MongoDB");
-
-/*
------------------------------------------
-Redis Connection
------------------------------------------
-*/
 
 const connection = new Redis({
   host: "127.0.0.1",
@@ -32,12 +19,6 @@ const connection = new Redis({
 });
 
 console.log("Worker started and waiting for jobs...");
-
-/*
------------------------------------------
-Worker Logic
------------------------------------------
-*/
 
 const worker = new Worker(
   "submissionQueue",
@@ -61,14 +42,21 @@ const worker = new Worker(
 
       for (const test of testCases) {
 
-        const output = await runCode(code, test.input);
-        console.log("Running with input:", test.input);
+        const result = await runCode(code, test.input);
+
+        const output = result.output;
+        const time = result.time;
+
+        console.log("Input:", test.input);
         console.log("Expected:", test.output);
         console.log("Received:", output);
+        console.log("Execution Time:", time, "seconds");
 
         if (output.trim() !== test.output.trim()) {
 
           submission.status = "Wrong Answer";
+          submission.executionTime = time;
+
           await submission.save();
 
           console.log("Wrong Answer");
@@ -78,6 +66,8 @@ const worker = new Worker(
       }
 
       submission.status = "Accepted";
+      submission.executionTime = Date.now();
+
       await submission.save();
 
       console.log("Accepted");
@@ -86,10 +76,20 @@ const worker = new Worker(
 
       console.log("Execution Error:", err);
 
-      const submission = await Submission.findById(job.data.submissionId);
+      const submission = await Submission.findById(submissionId);
 
       if (submission) {
-        submission.status = "Runtime Error";
+
+        if (err === "Compilation Error") {
+          submission.status = "Compilation Error";
+        }
+        else if (err === "Time Limit Exceeded") {
+          submission.status = "Time Limit Exceeded";
+        }
+        else {
+          submission.status = "Runtime Error";
+        }
+
         await submission.save();
       }
 
@@ -98,12 +98,6 @@ const worker = new Worker(
   },
   { connection }
 );
-
-/*
------------------------------------------
-Worker Events
------------------------------------------
-*/
 
 worker.on("completed", (job) => {
   console.log(`Job ${job.id} completed`);

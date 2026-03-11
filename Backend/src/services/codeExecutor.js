@@ -15,7 +15,6 @@ const runCode = (code, input) => {
     const inputPath = path.join(dir, "input.txt");
     const compileErrorPath = path.join(dir, "compile_error.txt");
 
-    // write code and input
     fs.writeFileSync(codePath, code);
     fs.writeFileSync(inputPath, input);
 
@@ -28,25 +27,28 @@ const runCode = (code, input) => {
       const end = Date.now();
       const executionTime = (end - start) / 1000;
 
-      // detect compilation error
+      // check compilation errors
       if (fs.existsSync(compileErrorPath)) {
-
         const compileError = fs.readFileSync(compileErrorPath, "utf8");
 
         if (compileError.length > 0) {
+          cleanTemp(dir);
           return reject("Compilation Error");
         }
-
       }
 
       if (err) {
 
         if (err.code === 124) {
+          cleanTemp(dir);
           return reject("Time Limit Exceeded");
         }
 
+        cleanTemp(dir);
         return reject("Runtime Error");
       }
+
+      cleanTemp(dir);
 
       resolve({
         output: stdout,
@@ -57,5 +59,13 @@ const runCode = (code, input) => {
 
   });
 };
+
+function cleanTemp(dir) {
+  try {
+    fs.rmSync(dir, { recursive: true, force: true });
+  } catch (err) {
+    console.log("Temp cleanup error:", err);
+  }
+}
 
 export default runCode;
