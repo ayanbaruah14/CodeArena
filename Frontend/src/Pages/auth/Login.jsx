@@ -2,7 +2,7 @@ import { useState } from "react";
 import API from "../../api/api";
 import { useNavigate, Link } from "react-router-dom";
 
-function Login(){
+const Login=()=>{
 
   const [email,setEmail] = useState("");
   const [password,setPassword] = useState("");
@@ -48,10 +48,10 @@ function Login(){
 
       alert("Login Successful");
 
-      navigate("/");
+      navigate("/dashboard");
 
     }catch(err){
-
+console.log(err);
       alert("Invalid credentials");
 
     }
