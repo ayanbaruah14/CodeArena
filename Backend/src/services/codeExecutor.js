@@ -19,12 +19,12 @@ const runCode = (code, input) => {
     fs.writeFileSync(codePath, code);
     fs.writeFileSync(inputPath, input);
 
-    const command = `docker run --rm -v ${process.cwd()}/temp:/app -w /app cpp-judge bash -c "g++ solution.cpp -o solution 2> compile_error.txt && timeout 2s ./solution < input.txt"`;
+    const command = `docker run --rm --memory=128m --cpus=0.5 -v ${process.cwd()}/temp:/app -w /app cpp-judge bash -c "g++ solution.cpp -o solution 2> compile_error.txt && timeout 2s ./solution < input.txt"`;
 
 
     exec(command, (err, stdout, stderr) => {
 
-      // check compilation errors
+      // detect compilation error
       if (fs.existsSync(compileErrorPath)) {
 
         const compileError = fs.readFileSync(compileErrorPath, "utf8");
@@ -35,18 +35,14 @@ const runCode = (code, input) => {
 
       }
 
-      // detect timeout
       if (err) {
 
-if (err) {
+        // timeout returns exit code 124
+        if (err.code === 124) {
+          return reject("Time Limit Exceeded");
+        }
 
-  // timeout command returns exit code 124
-  if (err.code === 124) {
-    return reject("Time Limit Exceeded");
-  }
-
-  return reject(err);
-}
+        return reject("Runtime Error");
       }
 
       resolve(stdout);

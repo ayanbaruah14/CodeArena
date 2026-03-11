@@ -1,0 +1,5 @@
+solution.cpp: In function 'int main()':
+solution.cpp:3:29: error: expected ';' before 'cout'
+    3 | int main(){int a,b;cin>>a>>b cout<<a*b;}
+      |                             ^~~~~
+      |                             ;
