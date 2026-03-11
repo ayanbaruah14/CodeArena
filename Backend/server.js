@@ -6,7 +6,7 @@ import dotenv from "dotenv";
 import authRoutes from "./src/routes/authRoutes.js";
 import contestRoutes from "./src/routes/contestRoutes.js";
 import submissionRoutes from "./src/routes/submissionRoutes.js";
-
+import problemRoutes from "./src/routes/problemRoutes.js";
 dotenv.config();
 
 const app = express();
@@ -21,6 +21,7 @@ console.log("MongoDB Connected");
 app.use("/api/auth", authRoutes);
 app.use("/api/contests", contestRoutes);
 app.use("/api/submissions", submissionRoutes);
+app.use("/api/problems", problemRoutes);
 
 app.listen(5000, () => {
   console.log("Server running on port 5000");

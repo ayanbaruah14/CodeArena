@@ -17,7 +17,7 @@
   "devDependencies": {},
   "scripts": {
         "dev": "nodemon server.js",
-    "worker": "node src/queue/worker.js",
+    "worker": "nodemon src/queue/worker.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
   },

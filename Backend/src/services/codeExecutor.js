@@ -1,28 +1,40 @@
 import { exec } from "child_process";
 import fs from "fs";
+import path from "path";
 
 const runCode = (code, input) => {
-
   return new Promise((resolve, reject) => {
 
-    fs.writeFileSync("solution.cpp", code);
+    const dir = "./temp";
 
-    exec("g++ solution.cpp -o solution", (err) => {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir);
+    }
 
-      if (err) return reject("Compilation Error");
+    const codePath = path.join(dir, "solution.cpp");
+    const inputPath = path.join(dir, "input.txt");
 
-      exec(`echo "${input}" | ./solution`, (err, stdout) => {
+    fs.writeFileSync(codePath, code);
+    fs.writeFileSync(inputPath, input);
 
-        if (err) return reject("Runtime Error");
+    const command = `docker run --rm -v ${process.cwd()}/temp:/app -w /app cpp-judge bash -c "g++ solution.cpp -o solution && ./solution < input.txt"`;
 
-        resolve(stdout);
 
-      });
+    exec(command, (err, stdout, stderr) => {
+
+      if (stderr) {
+        console.log("stderr:", stderr);
+      }
+
+      if (err) {
+        return reject(err);
+      }
+
+      resolve(stdout);
 
     });
 
   });
-
 };
 
 export default runCode;

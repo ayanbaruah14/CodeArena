@@ -7,10 +7,10 @@ import adminMiddleware from "../middleware/adminMiddleware.js";
 
 const router = express.Router();
 
-router.post("/",authMiddleware,adminMiddleware,createProblem);
+router.post("/",authMiddleware,createProblem);
 
 router.get("/",getProblems);
 
 router.get("/:id",getProblemById);
 
-export default router;
+export default router
