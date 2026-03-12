@@ -39,7 +39,7 @@ function ProblemPage(){
 
       })
 
-      setResult("Submission sent. ID: "+res.data._id)
+      setResult("Submission sent. ID: "+res.data.submissionId)
 
     }catch(err){
 console.log(err);
