@@ -29,7 +29,7 @@ function ContestPage(){
       <div className="p-10">
 
         <h1 className="text-3xl font-bold mb-6">
-          {contest.name}
+          {contest.title}
         </h1>
 
         {contest.problems.map((p,index)=>{

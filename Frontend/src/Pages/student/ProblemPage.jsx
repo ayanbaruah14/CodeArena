@@ -1,56 +1,134 @@
 import { useEffect,useState } from "react";
-import { useParams,useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import Navbar from "../../components/Navbar";
 import API from "../../api/api";
 
-function ContestPage(){
+function ProblemPage(){
 
-  const {contestId} = useParams();
+  const {contestId,problemId} = useParams();
 
-  const [contest,setContest] = useState(null);
+  const [problem,setProblem] = useState(null);
 
-  const navigate = useNavigate();
+  const [code,setCode] = useState("");
+
+  const [language,setLanguage] = useState("cpp");
+
+  const [result,setResult] = useState("");
+
+
 
   useEffect(()=>{
 
-    API.get(`/contests/${contestId}`)
-      .then(res=>setContest(res.data))
+    API.get(`/problems/${problemId}`)
+      .then(res=>setProblem(res.data))
 
-  },[contestId])
+  },[problemId])
 
-  if(!contest) return <div>Loading...</div>
+
+
+  const submitCode = async ()=>{
+
+    try{
+
+      const res = await API.post("/submissions",{
+        
+        problemId,
+        contestId,
+        language,
+        code
+
+      })
+
+      setResult("Submission sent. ID: "+res.data._id)
+
+    }catch(err){
+console.log(err);
+      setResult("Submission failed")
+
+    }
+
+  }
+
+
+
+  if(!problem) return <div className="p-10">Loading...</div>
+
+
 
   return(
 
-    <div>
+    <div className="min-h-screen bg-gray-100">
 
       <Navbar/>
 
-      <div className="p-10">
+      <div className="p-10 grid grid-cols-2 gap-6">
 
-        <h1 className="text-3xl font-bold mb-6">
-          {contest.name}
-        </h1>
+        {/* Problem Statement */}
 
-        {contest.problems.map((p,index)=>{
+        <div className="bg-white p-6 shadow rounded">
 
-          const letter = String.fromCharCode(65 + index)
+          <h1 className="text-2xl font-bold mb-4">
+            {problem.title}
+          </h1>
 
-          return(
+          <p className="text-gray-700 mb-6">
+            {problem.description}
+          </p>
 
-            <div
-              key={p._id}
-              className="border p-4 mb-3 cursor-pointer hover:bg-gray-100"
-              onClick={()=>navigate(`/contest/${contestId}/problem/${p._id}`)}
+        </div>
+
+
+
+        {/* Code Editor */}
+
+        <div className="bg-white p-6 shadow rounded">
+
+          <div className="flex justify-between mb-4">
+
+            <h2 className="text-xl font-semibold">
+              Code Editor
+            </h2>
+
+
+            <select
+              value={language}
+              onChange={(e)=>setLanguage(e.target.value)}
+              className="border p-2 rounded"
             >
+              <option value="cpp">C++</option>
+              <option value="python">Python</option>
+              <option value="javascript">JavaScript</option>
+            </select>
 
-              <b>{letter}</b> — {p.title}
+          </div>
 
+
+          <textarea
+            value={code}
+            onChange={(e)=>setCode(e.target.value)}
+            className="w-full h-80 border p-4 font-mono rounded"
+            placeholder="Write your code here..."
+          />
+
+
+
+          <button
+            onClick={submitCode}
+            className="bg-green-600 text-white px-4 py-2 mt-4 rounded hover:bg-green-700"
+          >
+            Submit Code
+          </button>
+
+
+          {result && (
+
+            <div className="mt-4 p-3 bg-gray-200 rounded">
+              {result}
             </div>
 
-          )
+          )}
 
-        })}
+        </div>
 
       </div>
 
@@ -60,4 +138,4 @@ function ContestPage(){
 
 }
 
-export default ContestPage;
+export default ProblemPage;
