@@ -9,6 +9,8 @@ function ProblemPage(){
 
   const [problem,setProblem] = useState(null);
 
+  const [submissionId,setSubmissionId] = useState(null);
+
   const [code,setCode] = useState("");
 
   const [language,setLanguage] = useState("cpp");
@@ -17,6 +19,7 @@ function ProblemPage(){
 
 
 
+  // Load problem
   useEffect(()=>{
 
     API.get(`/problems/${problemId}`)
@@ -26,28 +29,64 @@ function ProblemPage(){
 
 
 
+  // Submit Code
   const submitCode = async ()=>{
 
     try{
 
       const res = await API.post("/submissions",{
-        
         problemId,
         contestId,
         language,
         code
-
       })
 
-      setResult("Submission sent. ID: "+res.data.submissionId)
+      const id = res.data.submissionId;
+
+      setSubmissionId(id);
+
+      setResult("Running...")
 
     }catch(err){
-console.log(err);
+
+      console.log(err);
+
       setResult("Submission failed")
 
     }
 
   }
+
+
+
+  // Poll submission result
+  useEffect(()=>{
+
+    if(!submissionId) return;
+
+    const interval = setInterval(async ()=>{
+
+      try{
+
+        const res = await API.get(`/submissions/${submissionId}`);
+
+        const status = res.data.status;
+
+        setResult(status);
+
+        if(status !== "Pending"){
+          clearInterval(interval);
+        }
+
+      }catch(err){
+        console.log(err);
+      }
+
+    },2000);
+
+    return ()=>clearInterval(interval);
+
+  },[submissionId])
 
 
 
@@ -89,7 +128,6 @@ console.log(err);
               Code Editor
             </h2>
 
-
             <select
               value={language}
               onChange={(e)=>setLanguage(e.target.value)}
@@ -111,7 +149,6 @@ console.log(err);
           />
 
 
-
           <button
             onClick={submitCode}
             className="bg-green-600 text-white px-4 py-2 mt-4 rounded hover:bg-green-700"
@@ -122,7 +159,7 @@ console.log(err);
 
           {result && (
 
-            <div className="mt-4 p-3 bg-gray-200 rounded">
+            <div className="mt-4 p-3 bg-gray-200 rounded font-semibold">
               {result}
             </div>
 
