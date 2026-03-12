@@ -16,11 +16,55 @@ export const createContest = async(req,res)=>{
 
 };
 
+export const addProblemToContest = async (req,res)=>{
+
+  try{
+
+    const {problemId} = req.body;
+
+    const contest = await Contest.findById(req.params.id);
+
+    contest.problems.push(problemId);
+
+    await contest.save();
+
+    res.json({msg:"Problem added to contest"});
+
+  }catch(err){
+
+    res.status(500).json({msg:"Server error"});
+
+  }
+
+};
+
 export const getContests = async(req,res)=>{
 
   const contests = await Contest.find().populate("problems");
 
   res.json(contests);
+
+};
+
+export const getContestById = async (req,res)=>{
+
+  try{
+
+    const contest = await Contest
+      .findById(req.params.id)
+      .populate("problems");
+
+    if(!contest){
+      return res.status(404).json({msg:"Contest not found"});
+    }
+
+    res.json(contest);
+
+  }catch(err){
+
+    res.status(500).json({msg:"Server error"});
+
+  }
 
 };
 

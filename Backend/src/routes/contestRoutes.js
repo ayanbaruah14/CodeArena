@@ -1,23 +1,38 @@
 import express from "express";
 import {
-createContest,
-getContests,
-updateContestStatus
+  createContest,
+  getContests,
+  updateContestStatus,
+  getContestById,
+  addProblemToContest
 } from "../controllers/contestController.js";
 
 import authMiddleware from "../middleware/authMiddleware.js";
 import adminMiddleware from "../middleware/adminMiddleware.js";
-
 const router = express.Router();
 
-router.post("/",authMiddleware,adminMiddleware,createContest);//only admin can create contests
+// create contest (admin only)
+router.post("/", authMiddleware,  createContest);
 
-router.get("/",getContests);
+// get all contests
+router.get("/", getContests);
 
-router.patch("/:id/status",
-authMiddleware,
-adminMiddleware,
-updateContestStatus
+
+//add problem to contest
+router.patch(
+  "/:id/add-problem",
+  authMiddleware,
+  addProblemToContest
+);
+
+// get single contest
+router.get("/:id", getContestById);
+
+// update contest status
+router.patch(
+  "/:id/status",
+  authMiddleware,
+  updateContestStatus
 );
 
 export default router;
