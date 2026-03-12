@@ -45,7 +45,7 @@ function ProblemPage(){
 
       setSubmissionId(id);
 
-      setResult("Running...")
+      setResult("In queue")
 
     }catch(err){
 
@@ -74,7 +74,7 @@ function ProblemPage(){
 
         setResult(status);
 
-        if(status !== "Pending"){
+        if(status !== "In queue"){
           clearInterval(interval);
         }
 

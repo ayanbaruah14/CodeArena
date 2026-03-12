@@ -9,6 +9,8 @@ function ContestPage(){
 
   const [contest,setContest] = useState(null);
 
+  const [statuses,setStatuses] = useState({});
+
   const navigate = useNavigate();
 
   useEffect(()=>{
@@ -17,6 +19,13 @@ function ContestPage(){
       .then(res=>setContest(res.data))
 
   },[contestId])
+
+  useEffect(()=>{
+
+  API.get(`/submissions/contest-status/${contestId}`)
+    .then(res=>setStatuses(res.data))
+
+},[contestId])
 
   if(!contest) return <div>Loading...</div>
 
@@ -32,25 +41,38 @@ function ContestPage(){
           {contest.title}
         </h1>
 
-        {contest.problems.map((p,index)=>{
+{contest.problems.map((p,index)=>{
 
-          const letter = String.fromCharCode(65 + index)
+  const letter = String.fromCharCode(65 + index)
 
-          return(
+  const status = statuses[p._id]
 
-            <div
-              key={p._id}
-              className="border p-4 mb-3 cursor-pointer hover:bg-gray-100"
-              onClick={()=>navigate(`/contest/${contestId}/problem/${p._id}`)}
-            >
+  return(
 
-              <b>{letter}</b> — {p.title}
+    <div
+      key={p._id}
+      className="border p-4 mb-3 cursor-pointer hover:bg-gray-100 flex justify-between"
+      onClick={()=>navigate(`/contest/${contestId}/problem/${p._id}`)}
+    >
 
-            </div>
+      <span>
+        <b>{letter}</b> — {p.title}
+      </span>
 
-          )
+      <span>
 
-        })}
+        {status === "Accepted" && "✅"}
+        {status === "Wrong Answer" && "❌"}
+        {status === "Time Limit Exceeded" && "⏱"}
+        {!status && "-"}
+
+      </span>
+
+    </div>
+
+  )
+
+})}
 
       </div>
 

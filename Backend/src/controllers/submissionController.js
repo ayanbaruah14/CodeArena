@@ -11,7 +11,7 @@ export const submitCode = async (req,res)=>{
     contest:contestId,
     code,
     language,
-    status:"Pending"
+    status:"In queue"
   });
 
   await submissionQueue.add("execute",{
@@ -24,5 +24,40 @@ export const submitCode = async (req,res)=>{
     message:"Submission queued",
     submissionId:submission._id
   });
+
+};
+
+
+export const getContestProblemStatus = async (req,res)=>{
+
+  try{
+
+    const userId = req.user.id;
+    const {contestId} = req.params;
+
+    const submissions = await Submission.find({
+      user:userId,
+      contest:contestId
+    }).sort({createdAt:-1});
+
+    const problemStatus = {};
+
+    submissions.forEach(sub=>{
+
+      const problemId = sub.problem.toString();
+
+      if(!problemStatus[problemId]){
+        problemStatus[problemId] = sub.status;
+      }
+
+    });
+
+    res.json(problemStatus);
+
+  }catch(err){
+
+    res.status(500).json({msg:"Server error"});
+
+  }
 
 };
