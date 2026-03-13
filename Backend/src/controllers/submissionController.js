@@ -27,6 +27,26 @@ export const submitCode = async (req,res)=>{
 
 };
 
+export const getUserSubmissions = async (req,res)=>{
+
+  try{
+
+    const userId = req.user.id;
+
+    const submissions = await Submission
+      .find({user:userId})
+      .populate("problem","title")
+      .sort({createdAt:-1});
+
+    res.json(submissions);
+
+  }catch(err){
+
+    res.status(500).json({msg:"Server error"});
+
+  }
+
+};
 
 export const getContestProblemStatus = async (req,res)=>{
 

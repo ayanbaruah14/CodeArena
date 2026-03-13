@@ -13,7 +13,7 @@ import Contests from "./Pages/student/Contests";
 import ContestPage from "./Pages/student/ContestPage";
 import ProblemPage from "./Pages/student/ProblemPage";
 import Leaderboard from "./Pages/student/Leaderboard";
-
+import Submissions from "./Pages/student/AllSubmissions";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
@@ -110,6 +110,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Leaderboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/allSubmissions"
+          element={
+            <ProtectedRoute>
+              <Submissions/>
             </ProtectedRoute>
           }
         />

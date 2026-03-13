@@ -14,10 +14,11 @@ const ContestSchema = new mongoose.Schema({
     default:"upcoming"
   },
 
-  problems:[
+ problems:[
     {
-      type:mongoose.Schema.Types.ObjectId,
-      ref:"Problem"
+        type:mongoose.Schema.Types.ObjectId,
+        ref:"Problem"
+      
     }
   ]
 

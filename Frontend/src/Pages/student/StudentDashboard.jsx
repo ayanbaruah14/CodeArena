@@ -40,7 +40,7 @@ function StudentDashboard(){
 
           <div
             className="bg-white p-6 rounded shadow cursor-pointer hover:shadow-lg transition"
-            onClick={()=>navigate("/contest")}
+            onClick={()=>navigate("/leaderboard")}
           >
 
             <h2 className="text-xl font-semibold mb-2">
@@ -57,15 +57,12 @@ function StudentDashboard(){
 
           <div
             className="bg-white p-6 rounded shadow cursor-pointer hover:shadow-lg transition"
+            onClick={()=>navigate("/allSubmissions")}
           >
 
             <h2 className="text-xl font-semibold mb-2">
-              My Submissions
+              All Submissions
             </h2>
-
-            <p className="text-gray-600">
-              Track your submission history.
-            </p>
 
           </div>
 

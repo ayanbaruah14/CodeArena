@@ -4,7 +4,8 @@ import {
   getContests,
   updateContestStatus,
   getContestById,
-  addProblemToContest
+  addProblemToContest,
+  getLeaderboard
 } from "../controllers/contestController.js";
 
 import authMiddleware from "../middleware/authMiddleware.js";
@@ -34,5 +35,7 @@ router.patch(
   authMiddleware,
   updateContestStatus
 );
+
+router.get("/leaderboard/:contestId",getLeaderboard);
 
 export default router;

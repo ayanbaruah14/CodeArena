@@ -17,7 +17,10 @@ const ProblemSchema = new mongoose.Schema({
     enum:["easy","medium","hard"],
     default:"easy"
   },
-
+  points:{
+    type:Number,
+    required:true
+  },
   timeLimit:{
     type:Number,
     default:2
