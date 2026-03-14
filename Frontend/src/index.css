@@ -1720,3 +1720,164 @@ html, body, #root {
               inset 0 0 20px rgba(0,245,255,.05) !important;
   transform: translateY(-2px);
 }
+/* ══════════════════════════════
+   PROBLEM PAGE — TEST CASES
+══════════════════════════════ */
+
+.nt-tc-section {
+  margin-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* section label */
+.nt-tc-section-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: .5rem;
+  letter-spacing: .28em;
+  text-transform: uppercase;
+  color: rgba(255, 45, 120, .45);
+}
+.nt-tc-section-icon {
+  font-size: .65rem;
+  filter: drop-shadow(0 0 5px #ff2d78);
+  animation: iconPulse 3s ease-in-out infinite;
+}
+.nt-tc-section-count {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: .75rem;
+  color: #ff2d78;
+  text-shadow: 0 0 8px #ff2d7888;
+  line-height: 1;
+}
+.nt-tc-section-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(255,45,120,.2), transparent);
+}
+
+/* case card */
+.nt-tc-card {
+  position: relative;
+  background: rgba(13, 5, 32, 0.8);
+  border: 1px solid rgba(255, 45, 120, .1);
+  border-left: 2px solid rgba(255, 45, 120, .35);
+  overflow: hidden;
+  transition: border-color .25s, background .25s;
+}
+.nt-tc-card:hover {
+  border-color: rgba(255, 45, 120, .22);
+  border-left-color: #ff2d78;
+  background: rgba(255, 45, 120, .04);
+}
+
+/* thin top accent line per card */
+.nt-tc-card-top {
+  height: 1px;
+  background: linear-gradient(90deg, #ff2d78, rgba(0,245,255,.5), transparent);
+  opacity: .5;
+}
+
+/* case badge row */
+.nt-tc-case-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: .55rem 1rem .35rem;
+}
+.nt-tc-case-num {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: .44rem;
+  letter-spacing: .25em;
+  color: rgba(255, 45, 120, .4);
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+.nt-tc-case-line {
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 45, 120, .08);
+}
+
+/* input / output row — side by side */
+.nt-tc-io-row {
+  display: grid;
+  grid-template-columns: 1fr 20px 1fr;
+  align-items: start;
+  gap: 0;
+  padding: 0 1rem .9rem;
+}
+
+.nt-tc-io-block {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+/* labels */
+.nt-tc-io-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: .42rem;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+}
+.nt-tc-io-label--input  { color: rgba(0, 245, 255, .5); }
+.nt-tc-io-label--output { color: rgba(57, 255, 20, .5); }
+
+.nt-tc-io-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.nt-tc-io-dot--cyan  { background: #00f5ff; box-shadow: 0 0 5px #00f5ff; }
+.nt-tc-io-dot--green { background: #39ff14; box-shadow: 0 0 5px #39ff14; }
+
+/* arrow between input and output */
+.nt-tc-io-arrow {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: .65rem;
+  color: rgba(255, 45, 120, .25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1.2rem;
+}
+
+/* pre blocks */
+.nt-tc-pre {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: .65rem;
+  line-height: 1.7;
+  letter-spacing: .03em;
+  padding: 8px 10px;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+  border: 1px solid;
+  min-height: 38px;
+}
+.nt-tc-pre--cyan {
+  color: #00f5ff;
+  background: rgba(0, 245, 255, .04);
+  border-color: rgba(0, 245, 255, .12);
+}
+.nt-tc-pre--green {
+  color: #39ff14;
+  background: rgba(57, 255, 20, .04);
+  border-color: rgba(57, 255, 20, .12);
+}
+
+/* empty value */
+.nt-tc-empty {
+  color: rgba(255, 255, 255, .15);
+  font-style: italic;
+  font-size: .6rem;
+}

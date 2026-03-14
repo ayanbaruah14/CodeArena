@@ -24,10 +24,7 @@ function ProblemPage() {
       setSubmitting(true);
       setResult("In queue");
       const res = await API.post("/submissions", {
-        problemId,
-        contestId,
-        language,
-        code,
+        problemId, contestId, language, code,
       });
       const id = res.data.submissionId;
       setSubmissionId(id);
@@ -50,9 +47,7 @@ function ProblemPage() {
           clearInterval(interval);
           setSubmitting(false);
         }
-      } catch (err) {
-        console.log(err);
-      }
+      } catch (err) { console.log(err); }
     }, 2000);
     return () => clearInterval(interval);
   }, [submissionId]);
@@ -83,6 +78,7 @@ function ProblemPage() {
   );
 
   const rc = resultCfg(result);
+  const sampleCases = problem.testCases?.slice(0, 3) || [];
 
   return (
     <div style={{ background: "#06030f", minHeight: "100vh", overflowX: "hidden", cursor: "crosshair" }}>
@@ -108,7 +104,7 @@ function ProblemPage() {
         {/* ── SPLIT LAYOUT ── */}
         <div className="nt-pp-grid">
 
-          {/* ── LEFT: PROBLEM STATEMENT ── */}
+          {/* ── LEFT: PROBLEM STATEMENT + TEST CASES ── */}
           <div className="nt-pp-panel">
             <div className="nt-pp-panel-header">
               <span className="nt-pp-panel-icon">◈</span>
@@ -116,9 +112,76 @@ function ProblemPage() {
               <span className="nt-pp-panel-line" />
             </div>
             <div className="nt-pp-panel-body">
+
+              {/* description */}
               <div className="nt-pp-description">
                 {problem.description}
               </div>
+
+              {/* ── SAMPLE TEST CASES ── */}
+              {sampleCases.length > 0 && (
+                <div className="nt-tc-section">
+
+                  {/* section label */}
+                  <div className="nt-tc-section-label">
+                    <span className="nt-tc-section-icon">⚡</span>
+                    <span>SAMPLE TEST CASES</span>
+                    <span className="nt-tc-section-count">{sampleCases.length}</span>
+                    <span className="nt-tc-section-line" />
+                  </div>
+
+                  {/* cases */}
+                  {sampleCases.map((tc, i) => (
+                    <div key={i} className="nt-tc-card">
+
+                      {/* card top accent */}
+                      <div className="nt-tc-card-top" />
+
+                      {/* case badge */}
+                      <div className="nt-tc-case-badge">
+                        <span className="nt-tc-case-num">CASE {String(i + 1).padStart(2, "0")}</span>
+                        <span className="nt-tc-case-line" />
+                      </div>
+
+                      {/* input + output row */}
+                      <div className="nt-tc-io-row">
+
+                        {/* INPUT */}
+                        <div className="nt-tc-io-block">
+                          <div className="nt-tc-io-label nt-tc-io-label--input">
+                            <span className="nt-tc-io-dot nt-tc-io-dot--cyan" />
+                            INPUT
+                          </div>
+                          <pre className="nt-tc-pre nt-tc-pre--cyan">
+                            {tc.input !== undefined && tc.input !== ""
+                              ? tc.input
+                              : <span className="nt-tc-empty">( empty )</span>}
+                          </pre>
+                        </div>
+
+                        {/* arrow */}
+                        <div className="nt-tc-io-arrow">→</div>
+
+                        {/* OUTPUT */}
+                        <div className="nt-tc-io-block">
+                          <div className="nt-tc-io-label nt-tc-io-label--output">
+                            <span className="nt-tc-io-dot nt-tc-io-dot--green" />
+                            OUTPUT
+                          </div>
+                          <pre className="nt-tc-pre nt-tc-pre--green">
+                            {tc.output ?? tc.expectedOutput ?? (
+                              <span className="nt-tc-empty">( empty )</span>
+                            )}
+                          </pre>
+                        </div>
+
+                      </div>
+                    </div>
+                  ))}
+
+                </div>
+              )}
+
             </div>
           </div>
 
@@ -128,8 +191,6 @@ function ProblemPage() {
               <span className="nt-pp-panel-icon" style={{ color: "#00f5ff", filter: "drop-shadow(0 0 6px #00f5ff)" }}>⌨</span>
               <span className="nt-pp-panel-label" style={{ color: "#00f5ff" }}>CODE EDITOR</span>
               <span className="nt-pp-panel-line" style={{ background: "linear-gradient(90deg,rgba(0,245,255,.4),transparent)" }} />
-
-              {/* language selector */}
               <div className="nt-lang-wrap">
                 <select
                   value={language}
@@ -164,26 +225,14 @@ function ProblemPage() {
               />
             </div>
 
-            {/* submit + result */}
             <div className="nt-pp-footer">
-              <button
-                onClick={submitCode}
-                disabled={submitting}
-                className="nt-submit-btn"
-              >
+              <button onClick={submitCode} disabled={submitting} className="nt-submit-btn">
                 {submitting ? (
-                  <>
-                    <span className="nt-submit-spinner">◈</span>
-                    JUDGING...
-                  </>
+                  <><span className="nt-submit-spinner">◈</span>JUDGING...</>
                 ) : (
-                  <>
-                    <span>⚡</span>
-                    SUBMIT CODE
-                  </>
+                  <><span>⚡</span>SUBMIT CODE</>
                 )}
               </button>
-
               {rc && (
                 <div className={`nt-result-box ${rc.cls}`}>
                   <span className="nt-result-icon">{rc.icon}</span>
@@ -196,8 +245,8 @@ function ProblemPage() {
                 </div>
               )}
             </div>
-
           </div>
+
         </div>
       </main>
     </div>
