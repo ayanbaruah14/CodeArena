@@ -11,10 +11,10 @@ const languageConfig = {
     file: "solution.py",
     command: `timeout --kill-after=1s 2s python3 solution.py < input.txt`
   },
-  javascript: {
-    file: "solution.js",
-    command: `timeout --kill-after=1s 2s node solution.js < input.txt`
-  },
+javascript: {
+  file: "solution.js",
+  command: `timeout --kill-after=1s 2s node solution.js < input.txt; exit 0`
+},
   java: {
     file: "Solution.java",
     command: `javac Solution.java 2> compile_error.txt && timeout --kill-after=1s 2s java Solution < input.txt`

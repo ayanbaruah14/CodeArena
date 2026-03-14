@@ -125,10 +125,14 @@ const worker = new Worker(
 
         await submission.save();
       }
+      throw err;
     }
 
   },
-  { connection }
+  {  connection,
+    lockDuration: 120000,      // 2 minutes
+    stalledInterval: 30000,
+    maxStalledCount: 0 }
 );
 
 // Job completed event
