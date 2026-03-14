@@ -1,178 +1,207 @@
-import { useEffect,useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import Navbar from "../../components/Navbar";
 import API from "../../api/api";
+import { Editor } from "@monaco-editor/react";
 
-function ProblemPage(){
-
-  const {contestId,problemId} = useParams();
-
-  const [problem,setProblem] = useState(null);
-
-  const [submissionId,setSubmissionId] = useState(null);
-
-  const [code,setCode] = useState("");
-
-  const [language,setLanguage] = useState("cpp");
-
-  const [result,setResult] = useState("");
-
-
+function ProblemPage() {
+  const { contestId, problemId } = useParams();
+  const [problem, setProblem] = useState(null);
+  const [submissionId, setSubmissionId] = useState(null);
+  const [code, setCode] = useState("");
+  const [language, setLanguage] = useState("cpp");
+  const [result, setResult] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   // Load problem
-  useEffect(()=>{
-
-    API.get(`/problems/${problemId}`)
-      .then(res=>setProblem(res.data))
-
-  },[problemId])
-
-
+  useEffect(() => {
+    API.get(`/problems/${problemId}`).then(res => setProblem(res.data));
+  }, [problemId]);
 
   // Submit Code
-  const submitCode = async ()=>{
-
-    try{
-
-      const res = await API.post("/submissions",{
+  const submitCode = async () => {
+    try {
+      setSubmitting(true);
+      setResult("In queue");
+      const res = await API.post("/submissions", {
         problemId,
         contestId,
         language,
-        code
-      })
-
+        code,
+      });
       const id = res.data.submissionId;
-
       setSubmissionId(id);
-
-      setResult("In queue")
-
-    }catch(err){
-
+    } catch (err) {
       console.log(err);
-
-      setResult("Submission failed")
-
+      setResult("Submission failed");
+      setSubmitting(false);
     }
-
-  }
-
-
+  };
 
   // Poll submission result
-  useEffect(()=>{
-
-    if(!submissionId) return;
-
-    const interval = setInterval(async ()=>{
-
-      try{
-
+  useEffect(() => {
+    if (!submissionId) return;
+    const interval = setInterval(async () => {
+      try {
         const res = await API.get(`/submissions/${submissionId}`);
-
         const status = res.data.status;
-
         setResult(status);
-
-        if(status !== "In queue"){
+        if (status !== "In queue") {
           clearInterval(interval);
+          setSubmitting(false);
         }
-
-      }catch(err){
+      } catch (err) {
         console.log(err);
       }
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [submissionId]);
 
-    },2000);
+  const languageMap = { cpp: "cpp", python: "python", javascript: "javascript" };
 
-    return ()=>clearInterval(interval);
+  const resultCfg = (r) => {
+    if (!r) return null;
+    const s = r.toLowerCase();
+    if (s === "accepted")            return { cls: "nt-result--accepted", icon: "✓", label: r };
+    if (s === "wrong answer")        return { cls: "nt-result--wrong",    icon: "✗", label: r };
+    if (s === "time limit exceeded") return { cls: "nt-result--tle",      icon: "⏱", label: r };
+    if (s === "in queue")            return { cls: "nt-result--queue",    icon: "◈", label: r };
+    if (s === "submission failed")   return { cls: "nt-result--wrong",    icon: "✗", label: r };
+    return { cls: "nt-result--queue", icon: "◈", label: r };
+  };
 
-  },[submissionId])
+  if (!problem) return (
+    <div style={{ background: "#06030f", minHeight: "100vh" }}>
+      <div className="nt-scanlines" />
+      <div className="nt-vignette" />
+      <Navbar />
+      <div className="nt-loading-wrap" style={{ marginTop: "6rem" }}>
+        <div className="nt-loading-bar"><div className="nt-loading-fill" /></div>
+        <p className="nt-loading-text"><span className="nt-blink">▋</span> LOADING PROBLEM...</p>
+      </div>
+    </div>
+  );
 
+  const rc = resultCfg(result);
 
+  return (
+    <div style={{ background: "#06030f", minHeight: "100vh", overflowX: "hidden", cursor: "crosshair" }}>
+      <div className="nt-scanlines" />
+      <div className="nt-vignette" />
 
-  if(!problem) return <div className="p-10">Loading...</div>
+      <Navbar />
 
+      <main className="nt-pp-main">
 
-
-  return(
-
-    <div className="min-h-screen bg-gray-100">
-
-      <Navbar/>
-
-      <div className="p-10 grid grid-cols-2 gap-6">
-
-        {/* Problem Statement */}
-
-        <div className="bg-white p-6 shadow rounded">
-
-          <h1 className="text-2xl font-bold mb-4">
-            {problem.title}
-          </h1>
-
-          <p className="text-gray-700 mb-6">
-            {problem.description}
-          </p>
-
+        {/* ── TOP BAR ── */}
+        <div className="nt-pp-topbar">
+          <div className="nt-eyebrow" style={{ marginBottom: 0, flex: 1 }}>
+            <span className="nt-eyebrow-line" />
+            <span className="nt-eyebrow-text">SECTOR 7 — PROBLEM ARENA</span>
+            <span className="nt-eyebrow-tail" />
+          </div>
+          <div className="nt-pp-title-row">
+            <h1 className="nt-pp-title">{problem.title}</h1>
+          </div>
         </div>
 
+        {/* ── SPLIT LAYOUT ── */}
+        <div className="nt-pp-grid">
 
-
-        {/* Code Editor */}
-
-        <div className="bg-white p-6 shadow rounded">
-
-          <div className="flex justify-between mb-4">
-
-            <h2 className="text-xl font-semibold">
-              Code Editor
-            </h2>
-
-            <select
-              value={language}
-              onChange={(e)=>setLanguage(e.target.value)}
-              className="border p-2 rounded"
-            >
-              <option value="cpp">C++</option>
-              <option value="python">Python</option>
-              <option value="javascript">JavaScript</option>
-            </select>
-
+          {/* ── LEFT: PROBLEM STATEMENT ── */}
+          <div className="nt-pp-panel">
+            <div className="nt-pp-panel-header">
+              <span className="nt-pp-panel-icon">◈</span>
+              <span className="nt-pp-panel-label">PROBLEM STATEMENT</span>
+              <span className="nt-pp-panel-line" />
+            </div>
+            <div className="nt-pp-panel-body">
+              <div className="nt-pp-description">
+                {problem.description}
+              </div>
+            </div>
           </div>
 
+          {/* ── RIGHT: CODE EDITOR ── */}
+          <div className="nt-pp-panel">
+            <div className="nt-pp-panel-header">
+              <span className="nt-pp-panel-icon" style={{ color: "#00f5ff", filter: "drop-shadow(0 0 6px #00f5ff)" }}>⌨</span>
+              <span className="nt-pp-panel-label" style={{ color: "#00f5ff" }}>CODE EDITOR</span>
+              <span className="nt-pp-panel-line" style={{ background: "linear-gradient(90deg,rgba(0,245,255,.4),transparent)" }} />
 
-          <textarea
-            value={code}
-            onChange={(e)=>setCode(e.target.value)}
-            className="w-full h-80 border p-4 font-mono rounded"
-            placeholder="Write your code here..."
-          />
-
-
-          <button
-            onClick={submitCode}
-            className="bg-green-600 text-white px-4 py-2 mt-4 rounded hover:bg-green-700"
-          >
-            Submit Code
-          </button>
-
-
-          {result && (
-
-            <div className="mt-4 p-3 bg-gray-200 rounded font-semibold">
-              {result}
+              {/* language selector */}
+              <div className="nt-lang-wrap">
+                <select
+                  value={language}
+                  onChange={e => setLanguage(e.target.value)}
+                  className="nt-lang-select"
+                >
+                  <option value="cpp">C++</option>
+                  <option value="python">Python</option>
+                  <option value="javascript">JavaScript</option>
+                </select>
+                <span className="nt-lang-arrow">▾</span>
+              </div>
             </div>
 
-          )}
+            <div className="nt-editor-wrap">
+              <Editor
+                height="420px"
+                language={languageMap[language]}
+                value={code}
+                onChange={value => setCode(value)}
+                theme="vs-dark"
+                options={{
+                  fontSize: 13,
+                  fontFamily: "'Share Tech Mono', monospace",
+                  minimap: { enabled: false },
+                  scrollBeyondLastLine: false,
+                  lineNumbers: "on",
+                  renderLineHighlight: "line",
+                  cursorBlinking: "phase",
+                  padding: { top: 12, bottom: 12 },
+                }}
+              />
+            </div>
 
+            {/* submit + result */}
+            <div className="nt-pp-footer">
+              <button
+                onClick={submitCode}
+                disabled={submitting}
+                className="nt-submit-btn"
+              >
+                {submitting ? (
+                  <>
+                    <span className="nt-submit-spinner">◈</span>
+                    JUDGING...
+                  </>
+                ) : (
+                  <>
+                    <span>⚡</span>
+                    SUBMIT CODE
+                  </>
+                )}
+              </button>
+
+              {rc && (
+                <div className={`nt-result-box ${rc.cls}`}>
+                  <span className="nt-result-icon">{rc.icon}</span>
+                  <span className="nt-result-label">{rc.label.toUpperCase()}</span>
+                  {rc.cls === "nt-result--queue" && (
+                    <span className="nt-result-dots">
+                      <span>.</span><span>.</span><span>.</span>
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+
+          </div>
         </div>
-
-      </div>
-
+      </main>
     </div>
-
-  )
-
+  );
 }
 
 export default ProblemPage;
