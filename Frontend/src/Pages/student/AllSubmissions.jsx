@@ -24,8 +24,8 @@ function Submissions() {
   };
 
   const handleProblemClick = (sub) => {
-    if (sub.contestId && sub.problemId) {
-      navigate(`/contest/${sub.contestId}/problem/${sub.problemId}`);
+    if (sub.contest && sub.problem?._id) {
+      navigate(`/contest/${sub.contest}/problem/${sub.problem._id}`);
     }
   };
 
@@ -124,7 +124,7 @@ function Submissions() {
               <div className="nt-sub-tbody">
                 {submissions.map((sub, i) => {
                   const sc = statusCfg(sub.status);
-                  const canClick = sub.contestId && sub.problemId;
+                  const canClick = sub.contest && sub.problem._id;
                   return (
                     <div
                       key={sub._id}
