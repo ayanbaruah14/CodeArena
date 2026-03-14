@@ -35,6 +35,10 @@ export const login = async (req,res)=>{
     process.env.JWT_SECRET
   );
 
-  res.json({token});
+  res.json({
+    token,
+    role:user.role
+  });
+
 
 };
