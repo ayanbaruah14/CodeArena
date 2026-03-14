@@ -17,7 +17,8 @@ export const submitCode = async (req,res)=>{
   await submissionQueue.add("execute",{
     submissionId:submission._id,
     code,
-    problemId
+    problemId,
+    language
   });
 
   res.json({

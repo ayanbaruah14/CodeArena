@@ -2,60 +2,96 @@ import { exec } from "child_process";
 import fs from "fs";
 import path from "path";
 
-const runCode = (code, input) => {
+const languageConfig = {
+  cpp: {
+    file: "solution.cpp",
+    command: `g++ solution.cpp -o solution 2> compile_error.txt && timeout --kill-after=1s 2s ./solution < input.txt`
+  },
+  python: {
+    file: "solution.py",
+    command: `timeout --kill-after=1s 2s python3 solution.py < input.txt`
+  },
+  javascript: {
+    file: "solution.js",
+    command: `timeout --kill-after=1s 2s node solution.js < input.txt`
+  },
+  java: {
+    file: "Solution.java",
+    command: `javac Solution.java 2> compile_error.txt && timeout --kill-after=1s 2s java Solution < input.txt`
+  }
+};
+
+const runCode = (code, input, language, submissionId) => {
   return new Promise((resolve, reject) => {
 
-    const dir = "./temp";
+    const dir = `./temp/${submissionId}`;
 
+    // create submission directory
     if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir);
+      fs.mkdirSync(dir, { recursive: true });
     }
 
-    const codePath = path.join(dir, "solution.cpp");
+    const lang = languageConfig[language];
+
+    if (!lang) {
+      return reject("Unsupported Language");
+    }
+
+    const codePath = path.join(dir, lang.file);
     const inputPath = path.join(dir, "input.txt");
     const compileErrorPath = path.join(dir, "compile_error.txt");
 
     fs.writeFileSync(codePath, code);
     fs.writeFileSync(inputPath, input);
 
-    const command = `docker run --rm --memory=128m --cpus=0.5 -v ${process.cwd()}/temp:/app -w /app cpp-judge bash -c "g++ solution.cpp -o solution 2> compile_error.txt && timeout 2s ./solution < input.txt"`;
+    const command = `docker run --rm \
+--network none \
+--memory=128m \
+--cpus=0.5 \
+--pids-limit 64 \
+-v ${process.cwd()}/temp/${submissionId}:/app \
+-w /app cpp-judge bash -c "${lang.command}"`;
 
     const start = Date.now();
 
-    exec(command, (err, stdout, stderr) => {
+    exec(
+      command,
+      { maxBuffer: 10 * 1024 * 1024 }, // allow large outputs
+      (err, stdout, stderr) => {
 
-      const end = Date.now();
-      const executionTime = (end - start) / 1000;
+        const end = Date.now();
+        const executionTime = (end - start) / 1000;
 
-      // check compilation errors
-      if (fs.existsSync(compileErrorPath)) {
-        const compileError = fs.readFileSync(compileErrorPath, "utf8");
+        // check compilation errors
+        if (fs.existsSync(compileErrorPath)) {
+          const compileError = fs.readFileSync(compileErrorPath, "utf8");
 
-        if (compileError.length > 0) {
-          cleanTemp(dir);
-          return reject("Compilation Error");
+          if (compileError.length > 0) {
+            cleanTemp(dir);
+            return reject("Compilation Error");
+          }
         }
-      }
 
-      if (err) {
+        if (err) {
 
-        if (err.code === 124) {
+          // timeout error
+          if (err.code === 124) {
+            cleanTemp(dir);
+            return reject("Time Limit Exceeded");
+          }
+
           cleanTemp(dir);
-          return reject("Time Limit Exceeded");
+          return reject("Runtime Error");
         }
 
         cleanTemp(dir);
-        return reject("Runtime Error");
+
+        resolve({
+          output: stdout,
+          time: executionTime
+        });
       }
-
-      cleanTemp(dir);
-
-      resolve({
-        output: stdout,
-        time: executionTime
-      });
-
-    });
+    );
 
   });
 };
