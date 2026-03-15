@@ -1,11 +1,46 @@
 import { useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar";
 import { useEffect, useRef, useState } from "react";
+import API from "../../api/api";
+
+/* ── decode JWT ── */
+function decodeToken(token) {
+  try {
+    const base64 = token.split(".")[1];
+    const padded  = base64 + "=".repeat((4 - base64.length % 4) % 4);
+    return JSON.parse(atob(padded));
+  } catch {
+    return null;
+  }
+}
+
+/* ── rating tier ── */
+function getRatingTitle(rating) {
+  if (!rating || rating < 1200) return { title: "NEWBIE",           color: "#888888"               };
+  if (rating < 1400)            return { title: "PUPIL",            color: "#39ff14"               };
+  if (rating < 1600)            return { title: "APPRENTICE",       color: "#00f5ff"               };
+  if (rating < 1900)            return { title: "SPECIALIST",       color: "#a855f7"               };
+  if (rating < 2100)            return { title: "EXPERT",           color: "#ffb800"               };
+  if (rating < 2400)            return { title: "CANDIDATE MASTER", color: "#ff8c00"               };
+  return                               { title: "MASTER",           color: "#ff2d78"               };
+}
+
+/* ── progress % toward next tier ── */
+function getRatingProgress(r) {
+  const tiers = [0, 1200, 1400, 1600, 1900, 2100, 2400, 3000];
+  for (let i = 0; i < tiers.length - 1; i++) {
+    if (r < tiers[i + 1])
+      return Math.round(((r - tiers[i]) / (tiers[i + 1] - tiers[i])) * 100);
+  }
+  return 100;
+}
 
 function StudentDashboard() {
-  const navigate = useNavigate();
+  const navigate  = useNavigate();
   const canvasRef = useRef(null);
-  const [clock, setClock] = useState("");
+  const [clock, setClock]       = useState("");
+  const [userData, setUserData] = useState(null);
+  const [totalProblems, setTotalProblems] = useState(null);
 
   /* live clock */
   useEffect(() => {
@@ -19,15 +54,35 @@ function StudentDashboard() {
     return () => clearInterval(id);
   }, []);
 
+  /* fetch user from decoded JWT — id field from jwt.sign({id:user._id}) */
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    const decoded = decodeToken(token);
+    if (!decoded?.id) return;
+    API.get(`/users/${decoded.id}`)
+      .then(res => setUserData(res.data))
+      .catch(err => console.error("Failed to fetch user:", err));
+  }, []);
+
+  /* fetch total problems count for solved/total display */
+  useEffect(() => {
+    API.get("/problems")
+      .then(res => setTotalProblems(
+        Array.isArray(res.data) ? res.data.length : res.data?.total ?? null
+      ))
+      .catch(() => {});
+  }, []);
+
   /* rain canvas */
   useEffect(() => {
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
+    const ctx    = canvas.getContext("2d");
     let W, H, drops = [], raf;
     const CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*<>/\\|[]{}!=+~";
 
     const resize = () => {
-      W = canvas.width = innerWidth;
+      W = canvas.width  = innerWidth;
       H = canvas.height = innerHeight;
       drops = Array.from({ length: Math.floor(W / 22) }, (_, i) => ({
         x: i * 22,
@@ -46,8 +101,7 @@ function StudentDashboard() {
 
     let last = 0;
     const draw = ts => {
-      const dt = (ts - last) / 1000;
-      last = ts;
+      const dt = (ts - last) / 1000; last = ts;
       ctx.clearRect(0, 0, W, H);
       drops.forEach(d => {
         d.y += d.speed * dt;
@@ -57,7 +111,7 @@ function StudentDashboard() {
           d.changeTimer = 0;
         }
         if (d.y > H) { d.y = Math.random() * -200; d.speed = Math.random() * 55 + 28; }
-        ctx.font = `${d.size}px 'Share Tech Mono', monospace`;
+        ctx.font      = `${d.size}px 'Share Tech Mono', monospace`;
         ctx.fillStyle = d.col + Math.round(d.opacity * 255).toString(16).padStart(2, "0");
         ctx.fillText(d.char, d.x, d.y);
       });
@@ -98,39 +152,29 @@ function StudentDashboard() {
     };
   }, []);
 
+  const rating     = userData?.rating      ?? 1000;
+  const rt         = getRatingTitle(rating);
+  const ratingProg = getRatingProgress(rating);
+  const solvedCount = userData?.solvedCount ?? null;
+
   const cards = [
     {
       route: "/contests",
-      icon: "⚡",
-      tag: "LIVE NOW",
-      title: "CONTESTS",
+      icon: "⚡", tag: "LIVE NOW", title: "CONTESTS",
       desc: "Enter live battles. Rip through problems. Tear down the leaderboard in real time.",
-      prog: "72%",
-      cta: "ENTER ARENA",
-      num: "01",
-      variant: "pink",
+      prog: "72%", cta: "ENTER ARENA", num: "01", variant: "pink",
     },
     {
-      route: "/allProblems",          // ← new card
-      icon: "◈",
-      tag: "PRACTICE",
-      title: "ALL PROBLEMS",
+      route: "/allProblems",
+      icon: "◈", tag: "PRACTICE", title: "ALL PROBLEMS",
       desc: "Browse every problem. Track what you've solved, retried, and left untouched.",
-      prog: "38%",
-      cta: "OPEN VAULT",
-      num: "02",
-      variant: "green",               // ← new green variant
+      prog: "38%", cta: "OPEN VAULT", num: "02", variant: "green",
     },
     {
       route: "/allSubmissions",
-      icon: "▣",
-      tag: "KILL LOG",
-      title: "ALL SUBMISSIONS",
+      icon: "▣", tag: "KILL LOG", title: "ALL SUBMISSIONS",
       desc: "Review your carnage. Every attempt. Every win. Trace your full code trail.",
-      prog: "54%",
-      cta: "ACCESS LOG",
-      num: "03",
-      variant: "cyan",
+      prog: "54%", cta: "ACCESS LOG", num: "03", variant: "cyan",
     },
   ];
 
@@ -146,7 +190,7 @@ function StudentDashboard() {
 
       <main className="nt-main">
 
-        {/* header */}
+        {/* ── HEADER ── */}
         <div className="nt-header">
           <div className="nt-eyebrow">
             <span className="nt-eyebrow-line" />
@@ -158,26 +202,145 @@ function StudentDashboard() {
             <span className="nt-h1-l2" data-text="DASHBOARD">DASHBOARD</span>
           </h1>
           <p className="nt-sub">// PICK YOUR MISSION — THE CITY WATCHES</p>
+
+          {/* ── HUD ── */}
           <div className="nt-hud">
-            {[
-              { l: "LEVEL",  v: "42"     },
-              { l: "RANK",   v: "#2,841" },
-              { l: "STREAK", v: "12 DAYS", c: "cyan"  },
-              { l: "SOLVED", v: "147"    },
-              { l: "STATUS", v: "ONLINE", c: "green"  },
-            ].map(({ l, v, c }) => (
-              <div key={l} className="nt-hud-item">
-                <span className="nt-hud-label">{l}</span>
-                <span className={`nt-hud-val ${c ? `nt-hud-val--${c}` : ""}`}>{v}</span>
-              </div>
-            ))}
+
+            {/* PLAYER */}
+            <div className="nt-hud-item">
+              <span className="nt-hud-label">PLAYER</span>
+              <span className="nt-hud-val">
+                {userData?.username || "—"}
+              </span>
+            </div>
+
+            {/* RATING — colored by tier */}
+            <div className="nt-hud-item">
+              <span className="nt-hud-label">RATING</span>
+              <span
+                className="nt-hud-val"
+                style={{ color: rt.color, textShadow: `0 0 10px ${rt.color}88` }}
+              >
+                {rating}
+              </span>
+            </div>
+
+            {/* SOLVED / TOTAL
+            <div className="nt-hud-item">
+              <span className="nt-hud-label">SOLVED</span>
+              <span className="nt-hud-val nt-hud-val--green">
+                {solvedCount ?? "—"}
+                {totalProblems !== null && (
+                  <span style={{
+                    color: "rgba(255,255,255,0.2)",
+                    fontSize: ".65rem",
+                    fontFamily: "'Share Tech Mono', monospace",
+                  }}>
+                    /{totalProblems}
+                  </span>
+                )}
+              </span>
+            </div> */}
+
           </div>
+        </div>
+
+        {/* ── RATING PANEL ── */}
+        <div className="nt-dash-rating-panel">
+
+          {/* left: number + bar */}
+          <div className="nt-dash-rating-left">
+            <div className="nt-dash-rating-eyebrow">CURRENT RATING</div>
+            <div className="nt-dash-rating-row">
+              <span
+                className="nt-dash-rating-num"
+                style={{ color: rt.color, textShadow: `0 0 16px ${rt.color}88` }}
+              >
+                {rating}
+              </span>
+              <span
+                className="nt-dash-rating-title"
+                style={{ color: rt.color, borderColor: rt.color + "44" }}
+              >
+                {rt.title}
+              </span>
+            </div>
+
+            {/* progress bar toward next tier */}
+            <div className="nt-dash-rating-bar-wrap">
+              <div className="nt-dash-rating-bar-track">
+                <div
+                  className="nt-dash-rating-bar-fill"
+                  style={{
+                    width: `${ratingProg}%`,
+                    background: `linear-gradient(90deg, ${rt.color}66, ${rt.color})`,
+                    boxShadow:  `0 0 8px ${rt.color}66`,
+                  }}
+                />
+              </div>
+              <span
+                className="nt-dash-rating-bar-pct"
+                style={{ color: rt.color }}
+              >
+                {ratingProg}%
+              </span>
+            </div>
+            <div className="nt-dash-rating-bar-label">
+              PROGRESS TO NEXT TIER
+            </div>
+          </div>
+
+          {/* right: tier ladder */}
+          <div className="nt-dash-rating-tiers">
+            {[
+              { title: "MASTER",           color: "#ff2d78", min: 2400 },
+              { title: "CANDIDATE MASTER", color: "#ff8c00", min: 2100 },
+              { title: "EXPERT",           color: "#ffb800", min: 1900 },
+              { title: "SPECIALIST",       color: "#a855f7", min: 1600 },
+              { title: "APPRENTICE",       color: "#00f5ff", min: 1400 },
+              { title: "PUPIL",            color: "#39ff14", min: 1200 },
+              { title: "NEWBIE",           color: "#888888", min: 0    },
+            ].map(tier => {
+              const isCurrentTier = rt.title === tier.title;
+              return (
+                <div
+                  key={tier.title}
+                  className={`nt-dash-tier-row ${isCurrentTier ? "nt-dash-tier-row--active" : ""}`}
+                >
+                  <span
+                    className="nt-dash-tier-dot"
+                    style={{
+                      background:  isCurrentTier ? tier.color : "transparent",
+                      borderColor: tier.color,
+                      boxShadow:   isCurrentTier ? `0 0 6px ${tier.color}` : "none",
+                    }}
+                  />
+                  <span
+                    className="nt-dash-tier-name"
+                    style={{ color: isCurrentTier ? tier.color : "rgba(255,255,255,0.2)" }}
+                  >
+                    {tier.title}
+                  </span>
+                  <span
+                    className="nt-dash-tier-min"
+                    style={{ color: isCurrentTier ? tier.color + "99" : "rgba(255,255,255,0.1)" }}
+                  >
+                    {tier.min === 0 ? "< 1200" : `${tier.min}+`}
+                  </span>
+                  {isCurrentTier && (
+                    <span className="nt-dash-tier-you">◄ YOU</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
         </div>
 
         <div className="nt-divider" />
         <div className="nt-section-label">SELECT YOUR MISSION</div>
 
-        {/* grid — now 3 real cards, no locked */}
+        {/* ── CARDS ── */}
         <div className="nt-grid">
           {cards.map((c, i) => (
             <div
@@ -209,13 +372,13 @@ function StudentDashboard() {
           ))}
         </div>
 
-        {/* status bar */}
+        {/* ── STATUS BAR ── */}
         <div className="nt-status-bar">
           <div className="nt-status-items">
             {[
               { dot: "green", label: "SYSTEMS ONLINE" },
               { dot: "pink",  label: "3 BATTLES LIVE" },
-              { dot: "cyan",  label: "SESSION SECURE" },
+              { dot: "cyan",  label: "SESSION SECURE"  },
             ].map(({ dot, label }) => (
               <div key={label} className="nt-status-item">
                 <span className={`nt-s-dot nt-s-dot--${dot}`} />{label}

@@ -25,11 +25,19 @@ function Submissions() {
     return { cls: "nt-ps--none", dot: "nt-s-dot--pink" };
   };
 
-  const handleProblemClick = (sub) => {
-    if (sub.contest && sub.problem?._id) {
-      navigate(`/contest/${sub.contest}/problem/${sub.problem._id}`);
-    }
-  };
+const handleProblemClick = (sub) => {
+  const problemId = sub.problem?._id;
+  if (!problemId) return;
+
+  if (sub.contestId) {
+    // submitted from a contest page
+    const contestId = sub.contestId;
+    navigate(`/contest/${contestId}/problem/${problemId}`);
+  } else {
+    // submitted from /problem/:problemId (no contest)
+    navigate(`/problem/${problemId}`);
+  }
+};
 
   /* ── FILTER + SEARCH ── */
   const filtered = submissions.filter(sub => {
@@ -201,7 +209,8 @@ function Submissions() {
               <div className="nt-sub-tbody">
                 {filtered.map((sub, i) => {
                   const sc = statusCfg(sub.status);
-                  const canClick = sub.contest && sub.problem?._id;
+// with this:
+const canClick = sub.problem?._id;
                   return (
                     <div
                       key={sub._id}

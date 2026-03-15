@@ -2538,3 +2538,298 @@ html, body, #root {
   padding: 2px 8px;
   margin-left: 10px;
 }
+/* ══════════════════════════════
+   LEADERBOARD — RATING SYSTEM
+══════════════════════════════ */
+
+/* rating update banners */
+.nt-lb-rating-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: .8rem 1.4rem;
+  margin-bottom: 1rem;
+  border: 1px solid;
+  animation: fadeUp .4s ease both;
+  font-family: 'Share Tech Mono', monospace;
+}
+.nt-lb-rating-banner--updating {
+  border-color: rgba(255,184,0,.25);
+  background: rgba(255,184,0,.04);
+  border-left: 3px solid #ffb800;
+  color: #ffb800;
+}
+.nt-lb-rating-banner--done {
+  border-color: rgba(57,255,20,.25);
+  background: rgba(57,255,20,.04);
+  border-left: 3px solid #39ff14;
+  color: #39ff14;
+}
+.nt-lb-rating-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: .85rem;
+  letter-spacing: .1em;
+}
+.nt-lb-rating-sub {
+  font-size: .46rem;
+  opacity: .55;
+  letter-spacing: .1em;
+  margin-top: 2px;
+}
+
+/* user info column — stack username + title */
+.nt-lb-user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+/* rating title badge under username */
+.nt-lb-rating-title-badge {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: .4rem;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border: 1px solid;
+  opacity: .8;
+}
+
+/* current rating (when no delta yet) */
+.nt-lb-current-rating {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: .44rem;
+  color: rgba(255,255,255,.25);
+  letter-spacing: .1em;
+}
+
+/* rating delta cell */
+.nt-lb-rating-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.nt-lb-delta {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: .95rem;
+  line-height: 1;
+  letter-spacing: .05em;
+}
+.nt-lb-delta--pos {
+  color: #39ff14;
+  text-shadow: 0 0 10px #39ff1488;
+}
+.nt-lb-delta--neg {
+  color: #ff2d78;
+  text-shadow: 0 0 10px #ff2d7888;
+}
+
+.nt-lb-new-rating {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: .52rem;
+  letter-spacing: .08em;
+  opacity: .85;
+}
+
+/* rating legend */
+.nt-lb-rating-legend {
+  margin-top: 1.5rem;
+  padding: 1rem 1.4rem;
+  background: rgba(255,45,120,.02);
+  border: 1px solid rgba(255,45,120,.08);
+}
+.nt-lb-rating-legend-title {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: .46rem;
+  letter-spacing: .28em;
+  color: rgba(255,45,120,.4);
+  text-transform: uppercase;
+  margin-bottom: .8rem;
+}
+.nt-lb-rating-legend-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6rem 1.5rem;
+}
+.nt-lb-rating-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.nt-lb-rating-legend-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.nt-lb-rating-legend-name {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: .46rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.nt-lb-rating-legend-range {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: .44rem;
+  color: rgba(255,255,255,.2);
+  letter-spacing: .08em;
+}
+/* ══════════════════════════════
+   DASHBOARD — RATING PANEL
+══════════════════════════════ */
+
+.nt-dash-rating-panel {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2rem;
+  align-items: start;
+  padding: 1.4rem 1.6rem;
+  background: rgba(255,45,120,.03);
+  border: 1px solid rgba(255,45,120,.1);
+  border-top: 2px solid rgba(255,45,120,.3);
+  margin-bottom: 1.8rem;
+  animation: fadeUp .7s ease both;
+  animation-delay: .15s;
+}
+@media(max-width:700px) {
+  .nt-dash-rating-panel { grid-template-columns:1fr; gap:1.2rem; }
+}
+
+/* left side */
+.nt-dash-rating-left { display:flex; flex-direction:column; gap:.5rem; }
+
+.nt-dash-rating-eyebrow {
+  font-family:'Share Tech Mono',monospace;
+  font-size:.46rem;
+  letter-spacing:.3em;
+  text-transform:uppercase;
+  color:rgba(255,45,120,.4);
+}
+
+.nt-dash-rating-row {
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.nt-dash-rating-num {
+  font-family:'Bebas Neue',sans-serif;
+  font-size:3rem;
+  line-height:1;
+  letter-spacing:.05em;
+  transition:color .4s;
+}
+
+.nt-dash-rating-title {
+  font-family:'Share Tech Mono',monospace;
+  font-size:.52rem;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  padding:4px 10px;
+  border:1px solid;
+  align-self:center;
+}
+
+/* progress bar */
+.nt-dash-rating-bar-wrap {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-top:.3rem;
+}
+.nt-dash-rating-bar-track {
+  flex:1;
+  height:6px;
+  background:rgba(255,45,120,.07);
+  border:1px solid rgba(255,45,120,.12);
+  overflow:hidden;
+  max-width:300px;
+}
+.nt-dash-rating-bar-fill {
+  height:100%;
+  border-radius:0;
+  transition:width .8s cubic-bezier(.23,1,.32,1);
+  position:relative;
+  overflow:hidden;
+}
+.nt-dash-rating-bar-fill::after {
+  content:'';
+  position:absolute;
+  inset:0;
+  background:repeating-linear-gradient(90deg,rgba(255,255,255,.15) 0,rgba(255,255,255,.15) 3px,transparent 3px,transparent 8px);
+}
+.nt-dash-rating-bar-pct {
+  font-family:'Share Tech Mono',monospace;
+  font-size:.5rem;
+  letter-spacing:.1em;
+  min-width:30px;
+}
+.nt-dash-rating-bar-label {
+  font-family:'Share Tech Mono',monospace;
+  font-size:.42rem;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  color:rgba(255,255,255,.15);
+}
+
+/* right: tier ladder */
+.nt-dash-rating-tiers {
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  padding-left:1.2rem;
+  border-left:1px solid rgba(255,45,120,.1);
+}
+
+.nt-dash-tier-row {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:3px 0;
+  transition:opacity .2s;
+}
+
+.nt-dash-tier-dot {
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  border:1px solid;
+  flex-shrink:0;
+  transition:box-shadow .3s;
+}
+
+.nt-dash-tier-name {
+  font-family:'Share Tech Mono',monospace;
+  font-size:.48rem;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  min-width:130px;
+  transition:color .3s;
+}
+
+.nt-dash-tier-min {
+  font-family:'Share Tech Mono',monospace;
+  font-size:.42rem;
+  letter-spacing:.08em;
+  min-width:48px;
+}
+
+.nt-dash-tier-you {
+  font-family:'Share Tech Mono',monospace;
+  font-size:.42rem;
+  letter-spacing:.12em;
+  color:rgba(255,45,120,.6);
+  animation: tagBlink 1.5s ease-in-out infinite;
+}
+
+.nt-dash-tier-row--active .nt-dash-tier-name {
+  text-shadow:0 0 10px currentColor;
+}
+
+/* amber hud val */
+.nt-hud-val--amber {
+  color:#ffb800;
+  text-shadow:0 0 8px #ffb80088;
+}
