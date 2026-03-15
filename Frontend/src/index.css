@@ -2833,3 +2833,7 @@ html, body, #root {
   color:#ffb800;
   text-shadow:0 0 8px #ffb80088;
 }
+/* fix green card top border visibility */
+.nt-card--green {
+  border-top: 2px solid #39ff14 !important;
+}

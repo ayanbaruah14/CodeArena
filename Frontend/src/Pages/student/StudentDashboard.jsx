@@ -40,7 +40,6 @@ function StudentDashboard() {
   const canvasRef = useRef(null);
   const [clock, setClock]       = useState("");
   const [userData, setUserData] = useState(null);
-  const [totalProblems, setTotalProblems] = useState(null);
 
   /* live clock */
   useEffect(() => {
@@ -63,15 +62,6 @@ function StudentDashboard() {
     API.get(`/users/${decoded.id}`)
       .then(res => setUserData(res.data))
       .catch(err => console.error("Failed to fetch user:", err));
-  }, []);
-
-  /* fetch total problems count for solved/total display */
-  useEffect(() => {
-    API.get("/problems")
-      .then(res => setTotalProblems(
-        Array.isArray(res.data) ? res.data.length : res.data?.total ?? null
-      ))
-      .catch(() => {});
   }, []);
 
   /* rain canvas */
@@ -155,7 +145,6 @@ function StudentDashboard() {
   const rating     = userData?.rating      ?? 1000;
   const rt         = getRatingTitle(rating);
   const ratingProg = getRatingProgress(rating);
-  const solvedCount = userData?.solvedCount ?? null;
 
   const cards = [
     {
