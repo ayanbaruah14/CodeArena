@@ -15,6 +15,7 @@ import ProblemPage from "./Pages/student/ProblemPage";
 import Leaderboard from "./Pages/student/Leaderboard";
 import Submissions from "./Pages/student/AllSubmissions";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AllProblems from "./Pages/student/AllProblems";
 
 function App() {
 
@@ -104,6 +105,14 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/problem/:problemId"
+          element={
+            <ProtectedRoute>
+              <ProblemPage />
+            </ProtectedRoute>
+          }
+        />
 
         <Route
           path="/contest/:contestId/leaderboard"
@@ -118,6 +127,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Submissions/>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/allProblems"
+          element={
+            <ProtectedRoute>
+              <AllProblems/>
             </ProtectedRoute>
           }
         />

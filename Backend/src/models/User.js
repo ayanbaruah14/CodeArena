@@ -26,7 +26,7 @@ const UserSchema = new mongoose.Schema({
 
   rating:{
     type:Number,
-    default:1200
+    default:1000
   }
 
 },{timestamps:true});

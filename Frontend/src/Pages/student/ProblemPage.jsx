@@ -24,7 +24,7 @@ function ProblemPage() {
       setSubmitting(true);
       setResult("In queue");
       const res = await API.post("/submissions", {
-        problemId, contestId, language, code,
+        problemId, ...(contestId && {contestId}), language, code,// only pass contestid if its avlbl
       });
       const id = res.data.submissionId;
       setSubmissionId(id);

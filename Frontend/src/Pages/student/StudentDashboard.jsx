@@ -111,14 +111,25 @@ function StudentDashboard() {
       variant: "pink",
     },
     {
-      route: "/allSubmissions",
+      route: "/allProblems",          // ← new card
       icon: "◈",
+      tag: "PRACTICE",
+      title: "ALL PROBLEMS",
+      desc: "Browse every problem. Track what you've solved, retried, and left untouched.",
+      prog: "38%",
+      cta: "OPEN VAULT",
+      num: "02",
+      variant: "green",               // ← new green variant
+    },
+    {
+      route: "/allSubmissions",
+      icon: "▣",
       tag: "KILL LOG",
       title: "ALL SUBMISSIONS",
       desc: "Review your carnage. Every attempt. Every win. Trace your full code trail.",
       prog: "54%",
       cta: "ACCESS LOG",
-      num: "02",
+      num: "03",
       variant: "cyan",
     },
   ];
@@ -126,16 +137,9 @@ function StudentDashboard() {
   return (
     <div style={{ background: "#06030f", minHeight: "100vh", overflowX: "hidden", cursor: "crosshair", position: "relative" }}>
 
-      {/* rain */}
       <canvas ref={canvasRef} className="nt-rain" />
-
-      {/* scanlines */}
       <div className="nt-scanlines" />
-
-      {/* vignette */}
       <div className="nt-vignette" />
-
-      {/* city */}
       <div className="nt-city" />
 
       <Navbar />
@@ -151,16 +155,16 @@ function StudentDashboard() {
           </div>
           <h1 className="nt-h1">
             <span className="nt-h1-l1">STUDENT</span>
-            <span className="nt-h1-l2">DASHBOARD</span>
+            <span className="nt-h1-l2" data-text="DASHBOARD">DASHBOARD</span>
           </h1>
           <p className="nt-sub">// PICK YOUR MISSION — THE CITY WATCHES</p>
           <div className="nt-hud">
             {[
-              { l: "LEVEL", v: "42" },
-              { l: "RANK",  v: "#2,841" },
-              { l: "STREAK", v: "12 DAYS", c: "cyan" },
-              { l: "SOLVED", v: "147" },
-              { l: "STATUS", v: "ONLINE", c: "green" },
+              { l: "LEVEL",  v: "42"     },
+              { l: "RANK",   v: "#2,841" },
+              { l: "STREAK", v: "12 DAYS", c: "cyan"  },
+              { l: "SOLVED", v: "147"    },
+              { l: "STATUS", v: "ONLINE", c: "green"  },
             ].map(({ l, v, c }) => (
               <div key={l} className="nt-hud-item">
                 <span className="nt-hud-label">{l}</span>
@@ -173,7 +177,7 @@ function StudentDashboard() {
         <div className="nt-divider" />
         <div className="nt-section-label">SELECT YOUR MISSION</div>
 
-        {/* grid */}
+        {/* grid — now 3 real cards, no locked */}
         <div className="nt-grid">
           {cards.map((c, i) => (
             <div
@@ -203,20 +207,6 @@ function StudentDashboard() {
               </div>
             </div>
           ))}
-
-          {/* locked */}
-          <div className="nt-card nt-card--locked">
-            <div className="nt-card-num">03</div>
-            <div className="nt-card-body">
-              <span className="nt-card-icon" style={{ filter: "none", animation: "none" }}>🔒</span>
-              <div className="nt-card-tag nt-card-tag--locked"><span className="nt-tag-dot nt-tag-dot--locked" />SEALED</div>
-              <div className="nt-card-title nt-card-title--locked">LEADERBOARD</div>
-              <div className="nt-card-desc">Unlock at Level 50. Prove yourself first.</div>
-              <div className="nt-prog-label">LOCKED</div>
-              <div className="nt-prog-track nt-prog-track--locked" />
-            </div>
-            <div className="nt-card-cta nt-card-cta--locked"><span>LOCKED</span><span>☠</span></div>
-          </div>
         </div>
 
         {/* status bar */}

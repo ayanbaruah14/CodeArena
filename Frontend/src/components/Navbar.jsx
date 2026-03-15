@@ -6,7 +6,9 @@ function Navbar() {
   const location = useLocation();
   const canvasRef = useRef(null);
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path) =>
+    location.pathname === path ||
+    location.pathname.startsWith(path + "/");
 
   const logout = () => {
     localStorage.removeItem("token");
@@ -19,7 +21,7 @@ function Navbar() {
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     let raf;
-    const CHARS = "01アイウABCDEF<>{}[]#$";
+    const CHARS = "01ABCDEF<>{}[]#$@!=+~";   // ← no Japanese chars
     const drops = Array.from({ length: 18 }, (_, i) => ({
       x: i * 22 + Math.random() * 10,
       y: Math.random() * -60,
@@ -50,24 +52,22 @@ function Navbar() {
     return () => cancelAnimationFrame(raf);
   }, []);
 
+  // ← PROBLEMS added here
   const links = [
-    { name: "DASHBOARD",   path: "/dashboard",       icon: "⌂" },
-    { name: "CONTESTS",    path: "/contests",         icon: "⚡" },
-    { name: "SUBMISSIONS", path: "/allSubmissions",   icon: "◈" },
+    { name: "DASHBOARD",   path: "/dashboard",      icon: "⌂" },
+    { name: "CONTESTS",    path: "/contests",        icon: "⚡" },
+    { name: "PROBLEMS",    path: "/allProblems",     icon: "◈" },
+    { name: "SUBMISSIONS", path: "/allSubmissions",  icon: "▣" },
   ];
 
   return (
     <nav className="nt-navbar">
-
-      {/* rain canvas behind navbar */}
       <canvas
         ref={canvasRef}
         className="nt-navbar-rain"
         width={420}
         height={60}
       />
-
-      {/* bottom glow line */}
       <div className="nt-navbar-glow-line" />
 
       <div className="nt-navbar-inner">
@@ -103,17 +103,11 @@ function Navbar() {
 
         {/* ── RIGHT SIDE ── */}
         <div className="nt-navbar-right">
-
-          {/* status pill */}
           <div className="nt-navbar-status">
             <span className="nt-s-dot nt-s-dot--green" style={{ width: 6, height: 6 }} />
             <span className="nt-navbar-status-text">ONLINE</span>
           </div>
-
-          {/* divider */}
           <div className="nt-navbar-sep" />
-
-          {/* logout */}
           <button className="nt-logout-btn" onClick={logout}>
             <svg
               className="nt-logout-icon"
@@ -131,8 +125,8 @@ function Navbar() {
             </svg>
             <span>LOGOUT</span>
           </button>
-
         </div>
+
       </div>
     </nav>
   );

@@ -5,20 +5,46 @@ import API from "../../api/api";
 
 function Leaderboard() {
   const { contestId } = useParams();
-  const [leaders, setLeaders] = useState([]);
+  const [leaders, setLeaders]   = useState([]);
   const [problems, setProblems] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [contest, setContest]   = useState(null);   // ← added
+  const [loading, setLoading]   = useState(true);
+  const [now, setNow]           = useState(() => new Date().getTime()); // ← added
 
   useEffect(() => {
     API.get(`/contests/leaderboard/${contestId}`)
       .then(res => {
         setLeaders(res.data.leaderboard);
         setProblems(res.data.problems);
+        setContest(res.data.contest);               // ← added
       })
       .finally(() => setLoading(false));
   }, [contestId]);
 
+  /* live clock — ticks every second */
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date().getTime()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
   console.log(leaders);
+
+  /* ── derive contest status from dates ── */
+  const getContestStatus = () => {
+    if (!contest) return null;
+    const start = contest.startTime ? new Date(contest.startTime).getTime() : null;
+    const end   = contest.endTime   ? new Date(contest.endTime).getTime()   : null;
+    if (end && now > end)                           return "ENDED";
+    if (start && end && now >= start && now <= end) return "LIVE";
+    if (start && now < start)                       return "UPCOMING";
+    return "LIVE";
+  };
+
+  const contestStatus = getContestStatus();
+  const isFrozen      = contestStatus === "ENDED";
+  const frozenAt      = contest?.endTime
+    ? new Date(contest.endTime).toLocaleString()
+    : null;
 
   const rankCfg = (rank) => {
     if (rank === 1) return { cls: "nt-rank--gold",   icon: "◆", glow: "#ffd700" };
@@ -68,9 +94,67 @@ function Leaderboard() {
                   </span>
                 </div>
               )}
+              {/* ── contest status chip ── */}
+              {contestStatus && (
+                <div className="nt-hud-item">
+                  <span className="nt-hud-label">STATUS</span>
+                  <span className="nt-hud-val" style={{
+                    color: contestStatus === "LIVE"
+                      ? "#39ff14"
+                      : contestStatus === "ENDED"
+                      ? "rgba(255,255,255,0.3)"
+                      : "#00f5ff",
+                    textShadow: contestStatus === "LIVE" ? "0 0 8px #39ff1488" : "none"
+                  }}>
+                    {contestStatus}
+                  </span>
+                </div>
+              )}
             </div>
           )}
         </div>
+
+        {/* ── FROZEN BANNER ── */}
+        {!loading && isFrozen && frozenAt && (
+          <div className="nt-lb-frozen-banner">
+            <div className="nt-lb-frozen-left">
+              <span className="nt-lb-frozen-icon">🧊</span>
+              <div>
+                <div className="nt-lb-frozen-title">LEADERBOARD FROZEN</div>
+                <div className="nt-lb-frozen-sub">
+                  Final standings locked at contest end · {frozenAt}
+                </div>
+              </div>
+            </div>
+            <div className="nt-lb-frozen-badge">
+              <span className="nt-lb-frozen-dot" />
+              FINAL
+            </div>
+          </div>
+        )}
+
+        {/* ── LIVE BANNER ── */}
+        {!loading && contestStatus === "LIVE" && (
+          <div className="nt-lb-live-banner">
+            <div className="nt-lb-live-left">
+              <span className="nt-s-dot nt-s-dot--green"
+                style={{ width: 8, height: 8, flexShrink: 0 }} />
+              <div>
+                <div className="nt-lb-live-title">LIVE LEADERBOARD</div>
+                <div className="nt-lb-live-sub">
+                  Rankings updating in real time · Contest ends{" "}
+                  {contest?.endTime
+                    ? new Date(contest.endTime).toLocaleString()
+                    : "—"}
+                </div>
+              </div>
+            </div>
+            <div className="nt-lb-live-badge">
+              <span className="nt-lb-live-pulse" />
+              LIVE
+            </div>
+          </div>
+        )}
 
         <div className="nt-divider" />
 
@@ -98,13 +182,16 @@ function Leaderboard() {
           <>
             <div className="nt-section-label">
               {leaders.length} PLAYER{leaders.length !== 1 ? "S" : ""} RANKED
+              {isFrozen && (
+                <span className="nt-lb-frozen-tag">🧊 FROZEN</span>
+              )}
             </div>
 
             <div className="nt-lb-table-wrap">
 
               {/* thead */}
               <div
-                className="nt-lb-thead"
+                className={`nt-lb-thead ${isFrozen ? "nt-lb-thead--frozen" : ""}`}
                 style={{
                   gridTemplateColumns: `64px 1fr ${problems.map(() => "80px").join(" ")} 100px`
                 }}
@@ -116,19 +203,22 @@ function Leaderboard() {
                     {String.fromCharCode(65 + i)}
                   </div>
                 ))}
-                <div className="nt-lb-th nt-lb-th--center">SCORE</div>
+                <div className="nt-lb-th nt-lb-th--center">
+                  {isFrozen ? "FINAL" : "SCORE"}
+                </div>
               </div>
 
               {/* rows */}
               <div className="nt-lb-tbody">
                 {leaders.map((user, index) => {
                   const rank = index + 1;
-                  const rc = rankCfg(rank);
+                  const rc   = rankCfg(rank);
                   return (
                     <div
                       key={index}
-                      className={`nt-lb-row ${rc.cls} ${rank <= 3 ? "nt-lb-row--top3" : ""}`}
-                      style={{ animationDelay: `${index * 0.05}s`,
+                      className={`nt-lb-row ${rc.cls} ${rank <= 3 ? "nt-lb-row--top3" : ""} ${isFrozen ? "nt-lb-row--frozen" : ""}`}
+                      style={{
+                        animationDelay: `${index * 0.05}s`,
                         gridTemplateColumns: `64px 1fr ${problems.map(() => "80px").join(" ")} 100px`
                       }}
                     >
@@ -136,17 +226,13 @@ function Leaderboard() {
                       <div className="nt-lb-td">
                         <div className="nt-lb-rank">
                           {rc.icon && (
-                            <span
-                              className="nt-lb-rank-icon"
-                              style={{ color: rc.glow, textShadow: `0 0 10px ${rc.glow}` }}
-                            >
+                            <span className="nt-lb-rank-icon"
+                              style={{ color: rc.glow, textShadow: `0 0 10px ${rc.glow}` }}>
                               {rc.icon}
                             </span>
                           )}
-                          <span
-                            className="nt-lb-rank-num"
-                            style={rc.glow ? { color: rc.glow, textShadow: `0 0 10px ${rc.glow}88` } : {}}
-                          >
+                          <span className="nt-lb-rank-num"
+                            style={rc.glow ? { color: rc.glow, textShadow: `0 0 10px ${rc.glow}88` } : {}}>
                             {rank}
                           </span>
                         </div>
@@ -155,22 +241,22 @@ function Leaderboard() {
                       {/* username */}
                       <div className="nt-lb-td">
                         <div className="nt-lb-user">
-                          <div
-                            className="nt-lb-avatar"
-                            style={rc.glow ? { borderColor: rc.glow, boxShadow: `0 0 8px ${rc.glow}55` } : {}}
-                          >
+                          <div className="nt-lb-avatar"
+                            style={rc.glow ? { borderColor: rc.glow, boxShadow: `0 0 8px ${rc.glow}55` } : {}}>
                             {user.username?.[0]?.toUpperCase() || "?"}
                           </div>
-                          <span
-                            className="nt-lb-username"
-                            style={rc.glow ? { color: rc.glow, textShadow: `0 0 8px ${rc.glow}66` } : {}}
-                          >
+                          <span className="nt-lb-username"
+                            style={rc.glow ? { color: rc.glow, textShadow: `0 0 8px ${rc.glow}66` } : {}}>
                             {user.username}
                           </span>
+                          {/* crown for winner when frozen */}
+                          {isFrozen && rank === 1 && (
+                            <span className="nt-lb-crown">👑</span>
+                          )}
                         </div>
                       </div>
 
-                      {/* per-problem cells */}
+                      {/* per-problem cells — unchanged */}
                       {problems.map(p => {
                         const prob = user.problems?.[p._id];
                         if (!prob) return (
@@ -190,14 +276,15 @@ function Leaderboard() {
                         );
                       })}
 
-                      {/* total score */}
+                      {/* score */}
                       <div className="nt-lb-td nt-lb-td--center">
-                        <span
-                          className="nt-lb-score"
-                          style={rc.glow ? { color: rc.glow, textShadow: `0 0 12px ${rc.glow}88` } : {}}
-                        >
+                        <span className="nt-lb-score"
+                          style={rc.glow ? { color: rc.glow, textShadow: `0 0 12px ${rc.glow}88` } : {}}>
                           {user.score}
                         </span>
+                        {isFrozen && (
+                          <span className="nt-lb-score-lock">🔒</span>
+                        )}
                       </div>
 
                     </div>
