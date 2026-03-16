@@ -7,7 +7,7 @@
 - Compete in **live timed contests** with auto-freezing leaderboards
 - Solve problems in a **Monaco Editor** (the same engine that powers VS Code)
 - Get **real-time verdicts** via a distributed judge built on Docker + BullMQ + Redis
-- **Earn and lose rating** after every contest
+- **Earn or lose rating** after every contest
 - Track progress across an **All Problems** vault with solved/attempted/unsolved status
 
 ---
