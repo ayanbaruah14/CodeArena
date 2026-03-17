@@ -38,3 +38,22 @@ export const updateRating = async (req, res) => {
     res.status(500).json({ msg: "Server error", error: err.message });
   }
 };
+
+/* GET /api/users/leaderboard */
+export const getGlobalLeaderboard = async (req, res) => {
+  try {
+    const users = await User.find({}, "username rating")
+      .sort({ rating: -1 })
+      .lean();
+
+    const leaderboard = users.map((u, i) => ({
+      rank:     i + 1,
+      username: u.username,
+      rating:   u.rating ?? 1000,
+    }));
+
+    res.json(leaderboard);
+  } catch (err) {
+    res.status(500).json({ msg: "Server error", error: err.message });
+  }
+};

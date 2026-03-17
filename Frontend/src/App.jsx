@@ -16,6 +16,7 @@ import Leaderboard from "./Pages/student/Leaderboard";
 import Submissions from "./Pages/student/AllSubmissions";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AllProblems from "./Pages/student/AllProblems";
+import GlobalLeaderboard from "./Pages/student/GlobalLeaderboard";
 
 function App() {
 
@@ -135,6 +136,14 @@ function App() {
           element={
             <ProtectedRoute>
               <AllProblems/>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/globalLeaderboard"
+          element={
+            <ProtectedRoute>
+              <GlobalLeaderboard/>
             </ProtectedRoute>
           }
         />

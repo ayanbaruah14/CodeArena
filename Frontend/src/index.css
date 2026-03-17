@@ -2837,3 +2837,173 @@ html, body, #root {
 .nt-card--green {
   border-top: 2px solid #39ff14 !important;
 }
+/* ══════════════════════════════
+   GLOBAL LEADERBOARD
+══════════════════════════════ */
+
+.nt-gl-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+/* tier tabs — scrollable row */
+.nt-gl-tabs {
+  display: flex;
+  gap: 2px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.nt-gl-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: .48rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  border: 1px solid;
+  border-top: 2px solid;
+  cursor: pointer;
+  transition: all .2s;
+  background: transparent;
+}
+.nt-gl-tab:hover { opacity: .85; }
+
+.nt-gl-tab-count {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: .7rem;
+  line-height: 1;
+}
+
+/* table */
+.nt-gl-table {
+  border: 1px solid rgba(255,45,120,.12);
+  overflow: hidden;
+}
+
+.nt-gl-thead {
+  display: grid;
+  grid-template-columns: 80px 1fr 200px 120px;
+  background: rgba(255,45,120,.07);
+  border-top: 2px solid #ff2d78;
+  border-bottom: 1px solid rgba(255,45,120,.2);
+}
+@media(max-width:600px) {
+  .nt-gl-thead { grid-template-columns: 60px 1fr 120px; }
+  .nt-gl-col--tier { display: none; }
+}
+
+.nt-gl-th {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: .46rem;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: rgba(255,45,120,.5);
+  padding: .7rem 1rem;
+  display: flex;
+  align-items: center;
+}
+
+.nt-gl-tbody { display: flex; flex-direction: column; }
+
+/* row */
+.nt-gl-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 200px 120px;
+  border-bottom: 1px solid rgba(255,45,120,.06);
+  position: relative;
+  overflow: hidden;
+  transition: background .2s;
+  animation: fadeUp .4s ease both;
+}
+@media(max-width:600px) {
+  .nt-gl-row { grid-template-columns: 60px 1fr 120px; }
+}
+.nt-gl-row:hover { background: rgba(255,45,120,.03); }
+.nt-gl-row--top   { background: rgba(255,215,0,.02); }
+
+/* left accent bar for top 3 */
+.nt-gl-row-accent {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 2px;
+}
+
+.nt-gl-td {
+  padding: .85rem 1rem;
+  display: flex;
+  align-items: center;
+}
+
+/* rank */
+.nt-gl-rank {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.nt-gl-rank-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.1rem;
+  color: rgba(255,255,255,.2);
+  line-height: 1;
+  letter-spacing: .05em;
+}
+
+/* player */
+.nt-gl-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.nt-gl-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: .72rem;
+  flex-shrink: 0;
+}
+.nt-gl-username {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: .92rem;
+  font-weight: 600;
+  color: rgba(255,255,255,.75);
+  letter-spacing: .03em;
+  display: flex;
+  align-items: center;
+  transition: color .2s;
+}
+.nt-gl-row:hover .nt-gl-username { color: #ff2d78; }
+
+/* tier badge */
+.nt-gl-tier-badge {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: .46rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border: 1px solid;
+}
+
+/* rating */
+.nt-gl-rating {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.2rem;
+  line-height: 1;
+  letter-spacing: .05em;
+}
+
+/* column helpers */
+.nt-gl-col--rank   { }
+.nt-gl-col--player { }
+.nt-gl-col--tier   { }
+.nt-gl-col--rating { justify-content: flex-end; padding-right: 1.4rem; }
