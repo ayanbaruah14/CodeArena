@@ -45,7 +45,7 @@ const runCode = (code, input, language, submissionId) => {
     fs.writeFileSync(inputPath, input);
 
     const command = `docker run --rm \
---network none \
+--network none \  
 --memory=128m \
 --cpus=0.5 \
 --pids-limit 64 \

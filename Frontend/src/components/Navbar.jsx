@@ -58,6 +58,7 @@ function Navbar() {
     { name: "CONTESTS",    path: "/contests",        icon: "⚡" },
     { name: "PROBLEMS",    path: "/allProblems",     icon: "◈" },
     { name: "SUBMISSIONS", path: "/allSubmissions",  icon: "▣" },
+      { name: "RANKINGS",    path: "/globalLeaderboard",    icon: "◆" },
   ];
 
   return (
