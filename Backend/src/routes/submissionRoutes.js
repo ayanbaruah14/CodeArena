@@ -4,9 +4,16 @@ import Submission from "../models/Submission.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 import { getContestProblemStatus } from "../controllers/submissionController.js";
 import { getUserSubmissions } from "../controllers/submissionController.js";
+import rateLimit from "express-rate-limit";
 const router = express.Router();
-
-router.post("/",authMiddleware,submitCode);
+  const submissionLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 10, // max 10 submissions per minute
+  message: {
+    msg: "Too many submissions, slow down!"
+  }
+});
+router.post("/",authMiddleware,submissionLimiter,submitCode);//CANNOT SUBMIT MORE THAN 10 TIMES IN A MINUTE
 router.get(
   "/user",
   authMiddleware,

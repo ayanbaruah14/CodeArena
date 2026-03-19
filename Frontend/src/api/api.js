@@ -1,19 +1,33 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "http://localhost:5000/api"
+  baseURL: "http://localhost:5000/api",
+  withCredentials: true // 🔥 VERY IMPORTANT
 });
 
-API.interceptors.request.use((config) => {
+//intercept and provide access token when it expires
+API.interceptors.response.use(
+  (res) => res,
+  async (err) => {
+    const originalRequest = err.config;
 
-  const token = localStorage.getItem("token");
+    if (err.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
 
-  if(token){
-    config.headers.Authorization = token;
+      try {
+        await axios.post(
+          "http://localhost:5000/api/auth/refresh",
+          {},
+          { withCredentials: true }
+        );
+
+        return API(originalRequest);
+      } catch {
+        window.location.href = "/login";
+      }
+    }
+
+    return Promise.reject(err);
   }
-
-  return config;
-
-});
-
+);
 export default API;

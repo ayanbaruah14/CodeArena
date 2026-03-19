@@ -3,17 +3,6 @@ import Navbar from "../../components/Navbar";
 import { useEffect, useRef, useState } from "react";
 import API from "../../api/api";
 
-/* ── decode JWT ── */
-function decodeToken(token) {
-  try {
-    const base64 = token.split(".")[1];
-    const padded  = base64 + "=".repeat((4 - base64.length % 4) % 4);
-    return JSON.parse(atob(padded));
-  } catch {
-    return null;
-  }
-}
-
 /* ── rating tier ── */
 function getRatingTitle(rating) {
   if (!rating || rating < 1200) return { title: "NEWBIE",           color: "#888888"               };
@@ -53,16 +42,11 @@ function StudentDashboard() {
     return () => clearInterval(id);
   }, []);
 
-  /* fetch user from decoded JWT — id field from jwt.sign({id:user._id}) */
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) return;
-    const decoded = decodeToken(token);
-    if (!decoded?.id) return;
-    API.get(`/users/${decoded.id}`)
-      .then(res => setUserData(res.data))
-      .catch(err => console.error("Failed to fetch user:", err));
-  }, []);
+useEffect(() => {
+  API.get("/auth/me")
+    .then(res => setUserData(res.data.user))
+    .catch(err => console.error("Failed to fetch user:", err));
+}, []);
 
   /* rain canvas */
   useEffect(() => {
@@ -142,7 +126,7 @@ function StudentDashboard() {
     };
   }, []);
 
-  const rating     = userData?.rating      ?? 1000;
+  const rating     = userData?.rating      ?? 200;
   const rt         = getRatingTitle(rating);
   const ratingProg = getRatingProgress(rating);
 

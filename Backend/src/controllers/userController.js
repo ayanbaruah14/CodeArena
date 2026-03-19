@@ -3,9 +3,18 @@ import User from "../models/User.js";
 /* GET /api/users/:userId */
 export const getUserById = async (req, res) => {
   try {
-    const user = await User.findById(req.params.userId).select("-password");
-    if (!user) return res.status(404).json({ msg: "User not found" });
-    res.json(user);
+    // ✅ get id from JWT (set by authMiddleware)
+    const user = await User.findById(req.user.id).select("-password");
+
+    if (!user) {
+      return res.status(404).json({ msg: "User not found" });
+    }
+
+    res.json({
+  user,
+  role: user.role
+});
+
   } catch (err) {
     res.status(500).json({ msg: "Server error", error: err.message });
   }

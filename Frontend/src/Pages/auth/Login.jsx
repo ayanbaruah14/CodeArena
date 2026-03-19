@@ -56,24 +56,29 @@ const Login = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validate()) return;
-    try {
-      setLoading(true);
-      const res = await API.post("/auth/login", { email, password });
-      const token = res.data.token;
-      localStorage.setItem("token", token);
-      localStorage.setItem("role", res.data.role);
-      alert("Login Successful");
-      navigate("/dashboard");
-    } catch (err) {
-      console.log(err);
-      alert("Invalid credentials");
-    } finally {
-      setLoading(false);
-    }
-  };
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  if (!validate()) return;
+
+  try {
+    setLoading(true);
+
+    const res = await API.post("/auth/login", {
+      email,
+      password
+    });
+    localStorage.setItem("role", res.data.role);
+
+    alert("Login Successful");
+    navigate("/dashboard");
+
+  } catch (err) {
+    console.log(err);
+    alert("Invalid credentials");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div style={{

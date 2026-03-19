@@ -1,6 +1,6 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useRef } from "react";
-
+import API from "../api/api";
 function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -10,10 +10,15 @@ function Navbar() {
     location.pathname === path ||
     location.pathname.startsWith(path + "/");
 
-  const logout = () => {
-    localStorage.removeItem("token");
+const logout = async () => {
+  try {
+    await API.post("/auth/logout"); // 🔥 clears cookies in backend
     navigate("/login");
-  };
+  } catch (err) {
+    console.error("Logout failed:", err);
+    navigate("/login"); // fallback
+  }
+};
 
   /* mini rain canvas in navbar */
   useEffect(() => {
