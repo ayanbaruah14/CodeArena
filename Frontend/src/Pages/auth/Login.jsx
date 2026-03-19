@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import API from "../../api/api";
 import { useNavigate, Link } from "react-router-dom";
 
@@ -47,6 +47,47 @@ const Login = () => {
     raf = requestAnimationFrame(draw);
     return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", resize); };
   }, []);
+  const handleGoogleResponse = useCallback(async (response) => {
+  try {
+    const res = await API.post(
+      "/auth/google",
+      { token: response.credential },
+      { withCredentials: true }
+    );
+
+    localStorage.setItem("role", res.data.role);
+
+    alert("Login Successful");
+    navigate("/dashboard");
+
+  } catch (err) {
+    console.log(err);
+    alert("Google login failed");
+  }
+}, [navigate]);
+
+useEffect(() => {
+  const interval = setInterval(() => {
+    const btn = document.getElementById("googleBtnLogin");
+
+    if (window.google && btn) {
+      window.google.accounts.id.initialize({
+        client_id: "856746625056-13v68muq7qtpnp9s5q3ipfd7mkq8vb99.apps.googleusercontent.com",
+        callback: handleGoogleResponse,
+      });
+
+      window.google.accounts.id.renderButton(btn, {
+        theme: "outline",
+        size: "large",
+        width: "300",
+      });
+
+      clearInterval(interval);
+    }
+  }, 500);
+
+  return () => clearInterval(interval);
+}, [handleGoogleResponse]);
 
 const validate = (isGoogleAuth = false) => {
   const newErrors = {};
@@ -244,6 +285,14 @@ const handleSubmit = async (e) => {
             )}
           </button>
 
+{/* Google Auth */}
+<div className="nt-auth-divider">
+  <span className="nt-auth-divider-line" />
+  <span className="nt-auth-divider-text">OR</span>
+  <span className="nt-auth-divider-line" />
+</div>
+
+<div id="googleBtnRegister" className="nt-auth-google-wrap" />
           {/* register link */}
           <p className="nt-auth-footer">
             NO ACCOUNT?{" "}

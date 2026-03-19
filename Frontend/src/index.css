@@ -3007,3 +3007,36 @@ html, body, #root {
 .nt-gl-col--player { }
 .nt-gl-col--tier   { }
 .nt-gl-col--rating { justify-content: flex-end; padding-right: 1.4rem; }
+/* ══════════════════════════════
+   AUTH — OR DIVIDER + GOOGLE BTN
+══════════════════════════════ */
+
+.nt-auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: .8rem 0;
+}
+.nt-auth-divider-line {
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 45, 120, .15);
+}
+.nt-auth-divider-text {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: .5rem;
+  letter-spacing: .3em;
+  color: rgba(255, 45, 120, .35);
+  text-transform: uppercase;
+}
+
+.nt-auth-google-wrap {
+  display: flex;
+  justify-content: center;
+  /* Google button dark mode override */
+  filter: invert(0.85) hue-rotate(170deg);
+  transition: filter .2s;
+}
+.nt-auth-google-wrap:hover {
+  filter: invert(0.85) hue-rotate(170deg) brightness(1.15);
+}

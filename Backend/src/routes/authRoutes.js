@@ -1,7 +1,6 @@
 import express from "express";
-import {register,login} from "../controllers/authController.js";
+import {register,login,googleLogin,getMe} from "../controllers/authController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
-import { getMe } from "../controllers/authController.js";
 import { refresh,logout } from "../controllers/authController.js";
 import rateLimit from "express-rate-limit";
 const router = express.Router();
@@ -25,5 +24,6 @@ router.post("/login",loginLimiter, login);//PREVENT BRUTEFORCE MULTIPLE LOGIN AT
 router.post("/refresh", refresh);
 router.get("/me", authMiddleware, getMe);
 router.post("/logout", logout);
+router.post("/google", googleLogin);
 
 export default router;
