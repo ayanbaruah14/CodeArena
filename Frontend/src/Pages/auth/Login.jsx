@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import API from "../../api/api";
 import { useNavigate, Link } from "react-router-dom";
-
+import toast from "../../utils/toast";
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -57,7 +57,7 @@ const Login = () => {
 
     localStorage.setItem("role", res.data.role);
 
-    alert("Login Successful");
+    toast.success("LOGIN SUCCESSFUL — WELCOME BACK"); 
     navigate("/dashboard");
 
   } catch (err) {
@@ -118,12 +118,12 @@ const handleSubmit = async (e) => {
     });
     localStorage.setItem("role", res.data.role);
 
-    alert("Login Successful");
-    navigate("/dashboard");
+toast.success("LOGIN SUCCESSFUL — WELCOME BACK"); 
+   navigate("/dashboard");
 
   } catch (err) {
     console.log(err);
-    alert("Invalid credentials");
+    toast.error("INVALID CREDENTIALS — TRY AGAIN");
   } finally {
     setLoading(false);
   }
@@ -292,7 +292,8 @@ const handleSubmit = async (e) => {
   <span className="nt-auth-divider-line" />
 </div>
 
-<div id="googleBtnRegister" className="nt-auth-google-wrap" />
+<div id="googleBtnLogin" className="nt-auth-google-wrap" />
+
           {/* register link */}
           <p className="nt-auth-footer">
             NO ACCOUNT?{" "}

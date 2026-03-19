@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import API from "../../api/api";
 import { useNavigate, Link } from "react-router-dom";
-
+import toast from "../../utils/toast";
 function Register() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -62,7 +62,7 @@ function Register() {
 
   } catch (err) {
     console.log(err);
-    alert("Google auth failed");
+        toast.error("GOOGLE AUTH FAILED — TRY AGAIN");
   }
 }, [navigate]);
 
@@ -118,11 +118,11 @@ const validate = (isGoogleAuth = false) => {
     try {
       setLoading(true);
       await API.post("/auth/register", { username, email, password });
-      alert("Registration Successful");
+      toast.success("ACCOUNT CREATED — REDIRECTING TO LOGIN");
       navigate("/login");
     } catch (err) {
       console.log(err);
-      alert("Registration Failed");
+      toast.error("REGISTRATION FAILED — TRY AGAIN");
     } finally {
       setLoading(false);
     }
