@@ -48,13 +48,21 @@ const Login = () => {
     return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", resize); };
   }, []);
 
-  const validate = () => {
-    const newErrors = {};
-    if (!email)    newErrors.email    = "Email is required";
-    if (!password) newErrors.password = "Password is required";
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+const validate = (isGoogleAuth = false) => {
+  const newErrors = {};
+
+  if (!email)
+    newErrors.email = "Email is required";
+
+  // ✅ Skip password check for Google login
+  if (!isGoogleAuth) {
+    if (!password)
+      newErrors.password = "Password is required";
+  }
+
+  setErrors(newErrors);
+  return Object.keys(newErrors).length === 0;
+};
 
 const handleSubmit = async (e) => {
   e.preventDefault();

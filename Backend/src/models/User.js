@@ -24,7 +24,7 @@ const UserSchema = new mongoose.Schema({
 
   avatar:{
     type:String
-  },
+  },//as gogle login gives name,email and avatar link
 
   role:{
     type:String,

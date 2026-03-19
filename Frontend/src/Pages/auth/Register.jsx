@@ -49,16 +49,28 @@ function Register() {
     return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", resize); };
   }, []);
 
-  const validate = () => {
-    const newErrors = {};
-    if (!username.trim())               newErrors.username = "Username is required";
-    if (!email)                         newErrors.email = "Email is required";
-    else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = "Invalid email format";
-    if (!password)                      newErrors.password = "Password is required";
-    else if (password.length < 6)       newErrors.password = "Min 6 characters required";
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+const validate = (isGoogleAuth = false) => {
+  const newErrors = {};
+
+  if (!username.trim())
+    newErrors.username = "Username is required";
+
+  if (!email)
+    newErrors.email = "Email is required";
+  else if (!/\S+@\S+\.\S+/.test(email))
+    newErrors.email = "Invalid email format";
+
+  // ✅ Only validate password for normal signup
+  if (!isGoogleAuth) {
+    if (!password)
+      newErrors.password = "Password is required";
+    else if (password.length < 6)
+      newErrors.password = "Min 6 characters required";
+  }
+
+  setErrors(newErrors);
+  return Object.keys(newErrors).length === 0;
+};
 
   const handleSubmit = async (e) => {
     e.preventDefault();
