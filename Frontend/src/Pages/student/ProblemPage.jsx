@@ -6,17 +6,33 @@ import { Editor } from "@monaco-editor/react";
 
 function ProblemPage() {
   const { contestId, problemId } = useParams();
-  const [problem, setProblem] = useState(null);
+  const [problem, setProblem]         = useState(null);
   const [submissionId, setSubmissionId] = useState(null);
-  const [code, setCode] = useState("");
-  const [language, setLanguage] = useState("cpp");
-  const [result, setResult] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const [code, setCode]               = useState("");
+  const [language, setLanguage]       = useState("cpp");
+  const [result, setResult]           = useState("");
+  const [submitting, setSubmitting]   = useState(false);
+  const [editorKey, setEditorKey]     = useState(0);        // ← forces editor remount
+  const [prevSubs, setPrevSubs]       = useState([]);       // ← previous AC submissions
+  const [showPrevSubs, setShowPrevSubs] = useState(false);  // ← toggle dropdown
 
   // Load problem
   useEffect(() => {
     API.get(`/problems/${problemId}`).then(res => setProblem(res.data));
   }, [problemId]);
+
+  // Load previous accepted submissions for this problem
+// Load ALL submissions for this problem
+useEffect(() => {
+  API.get("/submissions/user")
+    .then(res => {
+      const allSubs = res.data.filter(s =>
+        s.problem?._id === problemId || s.problemId === problemId
+      );
+      setPrevSubs(allSubs);
+    })
+    .catch(() => {});
+}, [problemId]);
 
   // Submit Code
   const submitCode = async () => {
@@ -24,10 +40,12 @@ function ProblemPage() {
       setSubmitting(true);
       setResult("In queue");
       const res = await API.post("/submissions", {
-        problemId, ...(contestId && {contestId}), language, code,// only pass contestid if its avlbl
+        problemId,
+        ...(contestId && { contestId }),
+        language,
+        code,
       });
-      const id = res.data.submissionId;
-      setSubmissionId(id);
+      setSubmissionId(res.data.submissionId);
     } catch (err) {
       console.log(err);
       setResult("Submission failed");
@@ -46,11 +64,31 @@ function ProblemPage() {
         if (status !== "In queue") {
           clearInterval(interval);
           setSubmitting(false);
+          if (status === "Accepted" && res.data.code) {
+            setCode(res.data.code);
+            if (res.data.language) setLanguage(res.data.language);
+            setEditorKey(k => k + 1);  // ← remount editor with AC code
+            // add to prevSubs list
+            setPrevSubs(prev => [res.data, ...prev]);
+          }
         }
       } catch (err) { console.log(err); }
     }, 2000);
     return () => clearInterval(interval);
   }, [submissionId]);
+
+  // Load a previous submission into editor
+const loadPrevSub = async (sub) => {
+  try {
+    const res = await API.get(`/submissions/${sub._id}`);
+    setCode(res.data.code || "// Code not available");
+    if (res.data.language) setLanguage(res.data.language);
+    setEditorKey(k => k + 1);
+    setShowPrevSubs(false);
+  } catch (err) {
+    console.log(err);
+  }
+};
 
   const languageMap = { cpp: "cpp", python: "python", javascript: "javascript" };
 
@@ -112,45 +150,27 @@ function ProblemPage() {
               <span className="nt-pp-panel-line" />
             </div>
             <div className="nt-pp-panel-body">
+              <div className="nt-pp-description">{problem.description}</div>
 
-              {/* description */}
-              <div className="nt-pp-description">
-                {problem.description}
-              </div>
-
-              {/* ── SAMPLE TEST CASES ── */}
               {sampleCases.length > 0 && (
                 <div className="nt-tc-section">
-
-                  {/* section label */}
                   <div className="nt-tc-section-label">
                     <span className="nt-tc-section-icon">⚡</span>
                     <span>SAMPLE TEST CASES</span>
                     <span className="nt-tc-section-count">{sampleCases.length}</span>
                     <span className="nt-tc-section-line" />
                   </div>
-
-                  {/* cases */}
                   {sampleCases.map((tc, i) => (
                     <div key={i} className="nt-tc-card">
-
-                      {/* card top accent */}
                       <div className="nt-tc-card-top" />
-
-                      {/* case badge */}
                       <div className="nt-tc-case-badge">
                         <span className="nt-tc-case-num">CASE {String(i + 1).padStart(2, "0")}</span>
                         <span className="nt-tc-case-line" />
                       </div>
-
-                      {/* input + output row */}
                       <div className="nt-tc-io-row">
-
-                        {/* INPUT */}
                         <div className="nt-tc-io-block">
                           <div className="nt-tc-io-label nt-tc-io-label--input">
-                            <span className="nt-tc-io-dot nt-tc-io-dot--cyan" />
-                            INPUT
+                            <span className="nt-tc-io-dot nt-tc-io-dot--cyan" />INPUT
                           </div>
                           <pre className="nt-tc-pre nt-tc-pre--cyan">
                             {tc.input !== undefined && tc.input !== ""
@@ -158,15 +178,10 @@ function ProblemPage() {
                               : <span className="nt-tc-empty">( empty )</span>}
                           </pre>
                         </div>
-
-                        {/* arrow */}
                         <div className="nt-tc-io-arrow">→</div>
-
-                        {/* OUTPUT */}
                         <div className="nt-tc-io-block">
                           <div className="nt-tc-io-label nt-tc-io-label--output">
-                            <span className="nt-tc-io-dot nt-tc-io-dot--green" />
-                            OUTPUT
+                            <span className="nt-tc-io-dot nt-tc-io-dot--green" />OUTPUT
                           </div>
                           <pre className="nt-tc-pre nt-tc-pre--green">
                             {tc.output ?? tc.expectedOutput ?? (
@@ -174,23 +189,94 @@ function ProblemPage() {
                             )}
                           </pre>
                         </div>
-
                       </div>
                     </div>
                   ))}
-
                 </div>
               )}
-
             </div>
           </div>
 
           {/* ── RIGHT: CODE EDITOR ── */}
           <div className="nt-pp-panel">
             <div className="nt-pp-panel-header">
-              <span className="nt-pp-panel-icon" style={{ color: "#00f5ff", filter: "drop-shadow(0 0 6px #00f5ff)" }}>⌨</span>
-              <span className="nt-pp-panel-label" style={{ color: "#00f5ff" }}>CODE EDITOR</span>
-              <span className="nt-pp-panel-line" style={{ background: "linear-gradient(90deg,rgba(0,245,255,.4),transparent)" }} />
+              <span className="nt-pp-panel-icon" style={{ color:"#00f5ff", filter:"drop-shadow(0 0 6px #00f5ff)" }}>⌨</span>
+              <span className="nt-pp-panel-label" style={{ color:"#00f5ff" }}>CODE EDITOR</span>
+              <span className="nt-pp-panel-line" style={{ background:"linear-gradient(90deg,rgba(0,245,255,.4),transparent)" }} />
+
+              {/* ── PREVIOUS ACCEPTED SUBMISSIONS DROPDOWN ── */}
+{prevSubs.length > 0 && (
+  <div className="nt-pp-prev-wrap">
+    <button
+      className="nt-pp-prev-btn"
+      onClick={() => setShowPrevSubs(p => !p)}
+    >
+      ◈ {prevSubs.length} SUBMISSION{prevSubs.length !== 1 ? "S" : ""} {showPrevSubs ? "▴" : "▾"}
+    </button>
+
+    {showPrevSubs && (
+      <div className="nt-pp-prev-dropdown">
+        <div className="nt-pp-prev-dropdown-title">
+          MY SUBMISSIONS — {prevSubs.length} TOTAL
+        </div>
+        {prevSubs.map((s, i) => {
+          const isAC  = s.status?.toLowerCase() === "accepted";
+          const isTLE = s.status?.toLowerCase() === "time limit exceeded";
+          const statusColor = isAC ? "#39ff14" : isTLE ? "#ffb800" : "#ff2d78";
+          const statusIcon  = isAC ? "✓" : isTLE ? "⏱" : "✗";
+          return (
+            <button
+              key={s._id || i}
+              className="nt-pp-prev-item"
+              onClick={() => loadPrevSub(s)}
+            >
+              {/* status icon */}
+              <span style={{
+                color: statusColor,
+                textShadow: `0 0 6px ${statusColor}88`,
+                fontSize: ".65rem",
+                flexShrink: 0,
+                width: 14,
+              }}>
+                {statusIcon}
+              </span>
+
+              {/* status label */}
+              <span style={{
+                fontFamily: "'Share Tech Mono', monospace",
+                fontSize: ".44rem",
+                letterSpacing: ".1em",
+                color: statusColor,
+                flexShrink: 0,
+                minWidth: 50,
+              }}>
+                {isAC ? "AC" : isTLE ? "TLE" : "WA"}
+              </span>
+
+              {/* language */}
+              <span className="nt-pp-prev-lang">{s.language?.toUpperCase()}</span>
+
+              {/* date */}
+              <span className="nt-pp-prev-date">
+                {new Date(s.createdAt).toLocaleDateString()}
+              </span>
+
+              {/* time */}
+              <span className="nt-pp-prev-time">
+                {new Date(s.createdAt).toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" })}
+              </span>
+
+              {/* load */}
+              <span className="nt-pp-prev-load">LOAD →</span>
+            </button>
+          );
+        })}
+      </div>
+    )}
+  </div>
+)}
+
+              {/* language selector */}
               <div className="nt-lang-wrap">
                 <select
                   value={language}
@@ -207,10 +293,11 @@ function ProblemPage() {
 
             <div className="nt-editor-wrap">
               <Editor
+                key={editorKey}      //          remounts with new code 
                 height="420px"
                 language={languageMap[language]}
-                value={code}
-                onChange={value => setCode(value)}
+                defaultValue={code}       //     defaultValue respects remount 
+                onChange={value => setCode(value || "")}
                 theme="vs-dark"
                 options={{
                   fontSize: 13,
@@ -227,11 +314,9 @@ function ProblemPage() {
 
             <div className="nt-pp-footer">
               <button onClick={submitCode} disabled={submitting} className="nt-submit-btn">
-                {submitting ? (
-                  <><span className="nt-submit-spinner">◈</span>JUDGING...</>
-                ) : (
-                  <><span>⚡</span>SUBMIT CODE</>
-                )}
+                {submitting
+                  ? <><span className="nt-submit-spinner">◈</span>JUDGING...</>
+                  : <><span>⚡</span>SUBMIT CODE</>}
               </button>
               {rc && (
                 <div className={`nt-result-box ${rc.cls}`}>

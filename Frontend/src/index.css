@@ -3118,3 +3118,104 @@ html, body, #root {
   pointer-events: all;
 }
 .nt-toast-close:hover { opacity: 1; }
+/* ══════════════════════════════
+   PROBLEM PAGE — PREV SUBMISSIONS
+══════════════════════════════ */
+
+.nt-pp-prev-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.nt-pp-prev-btn {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: .48rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  padding: 5px 10px;
+  background: rgba(57,255,20,.08);
+  border: 1px solid rgba(57,255,20,.3);
+  color: #39ff14;
+  cursor: pointer;
+  transition: all .2s;
+  white-space: nowrap;
+}
+.nt-pp-prev-btn:hover {
+  background: rgba(57,255,20,.15);
+  box-shadow: 0 0 10px rgba(57,255,20,.2);
+}
+
+.nt-pp-prev-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 280px;
+  background: #0d0520;
+  border: 1px solid rgba(57,255,20,.2);
+  border-top: 2px solid #39ff14;
+  z-index: 100;
+  box-shadow: 0 8px 30px rgba(0,0,0,.5);
+  animation: fadeUp .2s ease both;
+}
+
+.nt-pp-prev-dropdown-title {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: .44rem;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: rgba(57,255,20,.45);
+  padding: .6rem .9rem;
+  border-bottom: 1px solid rgba(57,255,20,.1);
+}
+
+.nt-pp-prev-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: .65rem .9rem;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(57,255,20,.06);
+  cursor: pointer;
+  transition: background .15s;
+  text-align: left;
+}
+.nt-pp-prev-item:hover {
+  background: rgba(57,255,20,.07);
+}
+.nt-pp-prev-item:last-child { border-bottom: none; }
+
+.nt-pp-prev-lang {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: .46rem;
+  letter-spacing: .1em;
+  color: #00f5ff;
+  padding: 1px 6px;
+  border: 1px solid rgba(0,245,255,.2);
+  background: rgba(0,245,255,.06);
+  flex-shrink: 0;
+}
+.nt-pp-prev-date {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: .44rem;
+  color: rgba(255,255,255,.35);
+  letter-spacing: .05em;
+  flex: 1;
+}
+.nt-pp-prev-time {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: .42rem;
+  color: rgba(255,255,255,.2);
+  letter-spacing: .05em;
+  flex-shrink: 0;
+}
+.nt-pp-prev-load {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: .42rem;
+  letter-spacing: .12em;
+  color: rgba(57,255,20,.5);
+  flex-shrink: 0;
+  transition: color .15s;
+}
+.nt-pp-prev-item:hover .nt-pp-prev-load { color: #39ff14; }

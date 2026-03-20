@@ -49,6 +49,25 @@ export const getUserSubmissions = async (req,res)=>{
 
 };
 
+export const getSubmissionById = async (req, res) => {
+  try {
+    const submission = await Submission
+      .findById(req.params.submissionId)
+      .populate("problem", "title");
+
+    if (!submission)
+      return res.status(404).json({ msg: "Submission not found" });
+
+    // only owner can view their submission
+    if (submission.user.toString() !== req.user.id)
+      return res.status(403).json({ msg: "Access denied" });
+
+    res.json(submission);
+  } catch (err) {
+    res.status(500).json({ msg: "Server error" });
+  }
+};
+
 export const getContestProblemStatus = async (req,res)=>{
 
   try{
