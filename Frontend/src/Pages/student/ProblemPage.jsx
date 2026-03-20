@@ -204,8 +204,10 @@ const loadPrevSub = async (sub) => {
               <span className="nt-pp-panel-label" style={{ color:"#00f5ff" }}>CODE EDITOR</span>
               <span className="nt-pp-panel-line" style={{ background:"linear-gradient(90deg,rgba(0,245,255,.4),transparent)" }} />
 
-              {/* ── PREVIOUS ACCEPTED SUBMISSIONS DROPDOWN ── */}
+              {/* ── PREVIOUS SUBMISSIONS DROPDOWN ── */}
+
 {prevSubs.length > 0 && (
+
   <div className="nt-pp-prev-wrap">
     <button
       className="nt-pp-prev-btn"
@@ -213,12 +215,11 @@ const loadPrevSub = async (sub) => {
     >
       ◈ {prevSubs.length} SUBMISSION{prevSubs.length !== 1 ? "S" : ""} {showPrevSubs ? "▴" : "▾"}
     </button>
-
     {showPrevSubs && (
-      <div className="nt-pp-prev-dropdown">
-        <div className="nt-pp-prev-dropdown-title">
+<div className="nt-pp-prev-dropdown max-h-[300px] overflow-y-auto overflow-x-hidden pr-1 cyber-scroll">          <div className="nt-pp-prev-dropdown-title">
           MY SUBMISSIONS — {prevSubs.length} TOTAL
         </div>
+
         {prevSubs.map((s, i) => {
           const isAC  = s.status?.toLowerCase() === "accepted";
           const isTLE = s.status?.toLowerCase() === "time limit exceeded";
@@ -227,7 +228,7 @@ const loadPrevSub = async (sub) => {
           return (
             <button
               key={s._id || i}
-              className="nt-pp-prev-item"
+              className="nt-scroll nt-pp-prev-item"
               onClick={() => loadPrevSub(s)}
             >
               {/* status icon */}
@@ -270,11 +271,14 @@ const loadPrevSub = async (sub) => {
               <span className="nt-pp-prev-load">LOAD →</span>
             </button>
           );
+
         })}
       </div>
     )}
+
   </div>
 )}
+
 
               {/* language selector */}
               <div className="nt-lang-wrap">
