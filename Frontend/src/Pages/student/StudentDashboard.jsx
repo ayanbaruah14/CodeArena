@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar";
 import { useEffect, useRef, useState } from "react";
 import API from "../../api/api";
-
+import socket from "../../socket";
 /* ── rating tier ── */
 function getRatingTitle(rating) {
   if (!rating || rating < 1200) return { title: "NEWBIE",           color: "#888888"               };
@@ -41,6 +41,15 @@ function StudentDashboard() {
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, []);
+
+useEffect(() => {
+  socket.emit("createRoom", { userId: "123" });
+
+  socket.on("roomCreated", (data) => {
+    console.log("ROOM CREATED:", data);
+  });
+}, []);
+
 
 useEffect(() => {
   API.get("/auth/me")

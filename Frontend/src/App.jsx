@@ -17,7 +17,8 @@ import Submissions from "./Pages/student/AllSubmissions";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AllProblems from "./Pages/student/AllProblems";
 import GlobalLeaderboard from "./Pages/student/GlobalLeaderboard";
-
+import Room from "./Pages/Room";
+import Rooms from "./Pages/Rooms";
 function App() {
 
   return (
@@ -147,7 +148,8 @@ function App() {
             </ProtectedRoute>
           }
         />
-
+      <Route path="/rooms" element={<Rooms />} />
+<Route path="/room/:roomId" element={<Room />} />
       </Routes>
 
     </BrowserRouter>
