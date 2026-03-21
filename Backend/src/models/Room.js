@@ -1,0 +1,66 @@
+import mongoose from "mongoose";
+
+const RoomSchema = new mongoose.Schema({
+
+  roomId: {
+    type: String,
+    unique: true,
+    required: true
+  },
+
+  creator: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true
+  },
+
+  users: [
+    {
+      userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User"
+      },
+      username: String
+    }
+  ],
+
+  // ── ROOM STATUS ──
+  status: {
+    type: String,
+    enum: ["live", "ended"],
+    default: "live"
+  },
+
+  // ── MESSAGES ──
+  messages: [
+    {
+      userId:   { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      username: String,
+      message:  String,
+      system:   { type: Boolean, default: false }, // true for join/leave/contest alerts
+      sentAt:   { type: Date, default: Date.now },
+    }
+  ],
+
+  // ── CONTEST ──
+  contest: {
+    active:       { type: Boolean, default: false },
+    status:       { type: String, enum: ["none","waiting","active","ended"], default: "none" },
+    problems:     [{ type: mongoose.Schema.Types.ObjectId, ref: "Problem" }],
+    difficulty:   { type: String, enum: ["easy","medium","hard","mixed"], default: "mixed" },
+    problemCount: { type: Number, default: 5 },
+    startTime:    Date,
+    endTime:      Date,
+    duration:     Number,
+    scores: [{
+      userId:         { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      username:       String,
+      solved:         { type: Number, default: 0 },
+      score:          { type: Number, default: 0 },
+      solvedProblems: [{ type: mongoose.Schema.Types.ObjectId, ref: "Problem" }],
+    }],
+  },
+
+}, { timestamps: true });
+
+export default mongoose.model("Room", RoomSchema);

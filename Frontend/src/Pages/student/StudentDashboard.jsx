@@ -43,15 +43,6 @@ function StudentDashboard() {
   }, []);
 
 useEffect(() => {
-  socket.emit("createRoom", { userId: "123" });
-
-  socket.on("roomCreated", (data) => {
-    console.log("ROOM CREATED:", data);
-  });
-}, []);
-
-
-useEffect(() => {
   API.get("/auth/me")
     .then(res => setUserData(res.data.user))
     .catch(err => console.error("Failed to fetch user:", err));
@@ -146,17 +137,23 @@ useEffect(() => {
       desc: "Enter live battles. Rip through problems. Tear down the leaderboard in real time.",
       prog: "72%", cta: "ENTER ARENA", num: "01", variant: "pink",
     },
+      {
+    route: "/rooms",
+    icon: "⚔️", tag: "PRIVATE", title: "BATTLE ROOMS",
+    desc: "Create a private room. Share the code with friends. Fight who codes faster.",
+    prog: "50%", cta: "ENTER ROOM", num: "02", variant: "purple",  // ← new purple variant
+  },
     {
       route: "/allProblems",
       icon: "◈", tag: "PRACTICE", title: "ALL PROBLEMS",
       desc: "Browse every problem. Track what you've solved, retried, and left untouched.",
-      prog: "38%", cta: "OPEN VAULT", num: "02", variant: "green",
+      prog: "38%", cta: "OPEN VAULT", num: "03", variant: "green",
     },
     {
       route: "/allSubmissions",
       icon: "▣", tag: "KILL LOG", title: "ALL SUBMISSIONS",
       desc: "Review your carnage. Every attempt. Every win. Trace your full code trail.",
-      prog: "54%", cta: "ACCESS LOG", num: "03", variant: "cyan",
+      prog: "54%", cta: "ACCESS LOG", num: "04", variant: "cyan",
     },
   ];
 

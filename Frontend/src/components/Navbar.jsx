@@ -64,6 +64,7 @@ const logout = async () => {
     { name: "PROBLEMS",    path: "/allProblems",     icon: "◈" },
     { name: "SUBMISSIONS", path: "/allSubmissions",  icon: "▣" },
       { name: "RANKINGS",    path: "/globalLeaderboard",    icon: "◆" },
+      { name: "ROOMS",       path: "/rooms",          icon: "⚔️" },
   ];
 
   return (
