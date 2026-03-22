@@ -3,36 +3,60 @@ import { useParams } from "react-router-dom";
 import Navbar from "../../components/Navbar";
 import API from "../../api/api";
 import { Editor } from "@monaco-editor/react";
+import socket from "../../socket";  // ← import socket
 
 function ProblemPage() {
-  const { contestId, problemId } = useParams();
-  const [problem, setProblem]         = useState(null);
+  const { problemId, contestId } = useParams(); // contestId present when opened from a contest
+
+  // myId fetched from cookie-based /auth/me, NOT localStorage
+  const [myId,    setMyId]    = useState(null);
+  const [problem, setProblem] = useState(null);
   const [submissionId, setSubmissionId] = useState(null);
-  const [code, setCode]               = useState("");
-  const [language, setLanguage]       = useState("cpp");
-  const [result, setResult]           = useState("");
-  const [submitting, setSubmitting]   = useState(false);
-  const [editorKey, setEditorKey]     = useState(0);        // ← forces editor remount
-  const [prevSubs, setPrevSubs]       = useState([]);       // ← previous AC submissions
-  const [showPrevSubs, setShowPrevSubs] = useState(false);  // ← toggle dropdown
+  const [code, setCode]                 = useState("");
+  const [language, setLanguage]         = useState("cpp");
+  const [result, setResult]             = useState("");
+  const [submitting, setSubmitting]     = useState(false);
+  const [editorKey, setEditorKey]       = useState(0);
+  const [prevSubs, setPrevSubs]         = useState([]);
+  const [showPrevSubs, setShowPrevSubs] = useState(false);
+
+  // ── active contest context ──
+  // contestId  → from URL (normal /contest/:contestId/problem/:id route)
+  // activeContest → from localStorage (room contest)
+  const [activeContest, setActiveContest] = useState(null);
+  const inContest = !!(contestId || activeContest?.roomId);
+
+  /* fetch current user */
+  useEffect(() => {
+    API.get("/auth/me", { withCredentials: true })
+      .then(res => setMyId(res.data.user._id?.toString()))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("activeContest");
+      if (raw) setActiveContest(JSON.parse(raw));
+    } catch { /* ignore */ }
+  }, []);
 
   // Load problem
   useEffect(() => {
     API.get(`/problems/${problemId}`).then(res => setProblem(res.data));
   }, [problemId]);
 
-  // Load previous accepted submissions for this problem
-// Load ALL submissions for this problem
-useEffect(() => {
-  API.get("/submissions/user")
-    .then(res => {
-      const allSubs = res.data.filter(s =>
-        s.problem?._id === problemId || s.problemId === problemId
-      );
-      setPrevSubs(allSubs);
-    })
-    .catch(() => {});
-}, [problemId]);
+  // Load previous submissions — skip entirely when in any contest
+  useEffect(() => {
+    if (inContest) return;                      // ← contest mode: no prev subs
+    API.get("/submissions/user")
+      .then(res => {
+        const allSubs = res.data.filter(s =>
+          s.problem?._id === problemId || s.problemId === problemId
+        );
+        setPrevSubs(allSubs);
+      })
+      .catch(() => {});
+  }, [problemId, inContest]);
 
   // Submit Code
   const submitCode = async () => {
@@ -41,7 +65,6 @@ useEffect(() => {
       setResult("In queue");
       const res = await API.post("/submissions", {
         problemId,
-        ...(contestId && { contestId }),
         language,
         code,
       });
@@ -61,34 +84,47 @@ useEffect(() => {
         const res = await API.get(`/submissions/${submissionId}`);
         const status = res.data.status;
         setResult(status);
+
         if (status !== "In queue") {
           clearInterval(interval);
           setSubmitting(false);
-          if (status === "Accepted" && res.data.code) {
-            setCode(res.data.code);
-            if (res.data.language) setLanguage(res.data.language);
-            setEditorKey(k => k + 1);  // ← remount editor with AC code
-            // add to prevSubs list
+
+          if (status === "Accepted") {
+            // ── notify the contest room if there's an active contest ──
+            if (activeContest?.roomId && myId) {
+              socket.emit("contestProblemSolved", {
+                roomId:    activeContest.roomId,
+                userId:    myId,
+                problemId: problemId,
+              });
+            }
+
+            // update editor with accepted code
+            if (res.data.code) {
+              setCode(res.data.code);
+              if (res.data.language) setLanguage(res.data.language);
+              setEditorKey(k => k + 1);
+            }
             setPrevSubs(prev => [res.data, ...prev]);
           }
         }
       } catch (err) { console.log(err); }
     }, 2000);
     return () => clearInterval(interval);
-  }, [submissionId]);
+  }, [submissionId, activeContest, myId]);
 
   // Load a previous submission into editor
-const loadPrevSub = async (sub) => {
-  try {
-    const res = await API.get(`/submissions/${sub._id}`);
-    setCode(res.data.code || "// Code not available");
-    if (res.data.language) setLanguage(res.data.language);
-    setEditorKey(k => k + 1);
-    setShowPrevSubs(false);
-  } catch (err) {
-    console.log(err);
-  }
-};
+  const loadPrevSub = async (sub) => {
+    try {
+      const res = await API.get(`/submissions/${sub._id}`);
+      setCode(res.data.code || "// Code not available");
+      if (res.data.language) setLanguage(res.data.language);
+      setEditorKey(k => k + 1);
+      setShowPrevSubs(false);
+    } catch (err) {
+      console.log(err);
+    }
+  };
 
   const languageMap = { cpp: "cpp", python: "python", javascript: "javascript" };
 
@@ -125,6 +161,32 @@ const loadPrevSub = async (sub) => {
 
       <Navbar />
 
+      {/* ── contest context banner ── */}
+      {activeContest?.roomId && (
+        <div style={{
+          background:"rgba(255,45,120,.06)", borderBottom:"1px solid rgba(255,45,120,.2)",
+          padding:".4rem 1.5rem", display:"flex", alignItems:"center", gap:10,
+          fontFamily:"'Share Tech Mono',monospace", fontSize:".48rem", letterSpacing:".12em",
+        }}>
+          <span style={{ color:"#ff2d78", filter:"drop-shadow(0 0 5px #ff2d78)" }}>⚡</span>
+          <span style={{ color:"rgba(255,45,120,.7)" }}>CONTEST ACTIVE</span>
+          <span style={{ color:"rgba(255,255,255,.2)" }}>·</span>
+          <span style={{ color:"rgba(255,45,120,.5)" }}>ROOM {activeContest.roomId}</span>
+          <span style={{ color:"rgba(255,255,255,.2)" }}>·</span>
+          <span style={{ color:"rgba(255,255,255,.3)" }}>ACCEPTED SUBMISSIONS SCORE POINTS</span>
+          <button
+            onClick={() => {
+              localStorage.removeItem("activeContest");
+              setActiveContest(null);
+            }}
+            style={{ marginLeft:"auto", background:"none", border:"none",
+              color:"rgba(255,45,120,.4)", cursor:"pointer", fontSize:".44rem",
+              fontFamily:"'Share Tech Mono',monospace", letterSpacing:".1em" }}>
+            ✕ EXIT CONTEST MODE
+          </button>
+        </div>
+      )}
+
       <main className="nt-pp-main">
 
         {/* ── TOP BAR ── */}
@@ -136,6 +198,16 @@ const loadPrevSub = async (sub) => {
           </div>
           <div className="nt-pp-title-row">
             <h1 className="nt-pp-title">{problem.title}</h1>
+            {problem.points && (
+              <span style={{
+                fontFamily:"'Bebas Neue',sans-serif", fontSize:".9rem",
+                padding:"2px 10px", border:"1px solid rgba(255,184,0,.3)",
+                color:"#ffb800", background:"rgba(255,184,0,.06)",
+                textShadow:"0 0 8px #ffb80044", marginLeft:12, alignSelf:"center",
+              }}>
+                {problem.points} PTS
+              </span>
+            )}
           </div>
         </div>
 
@@ -204,89 +276,56 @@ const loadPrevSub = async (sub) => {
               <span className="nt-pp-panel-label" style={{ color:"#00f5ff" }}>CODE EDITOR</span>
               <span className="nt-pp-panel-line" style={{ background:"linear-gradient(90deg,rgba(0,245,255,.4),transparent)" }} />
 
-              {/* ── PREVIOUS SUBMISSIONS DROPDOWN ── */}
-
-{prevSubs.length > 0 && (
-
-  <div className="nt-pp-prev-wrap">
-    <button
-      className="nt-pp-prev-btn"
-      onClick={() => setShowPrevSubs(p => !p)}
-    >
-      ◈ {prevSubs.length} SUBMISSION{prevSubs.length !== 1 ? "S" : ""} {showPrevSubs ? "▴" : "▾"}
-    </button>
-    {showPrevSubs && (
-<div className="nt-pp-prev-dropdown max-h-[300px] overflow-y-auto overflow-x-hidden pr-1 cyber-scroll">          <div className="nt-pp-prev-dropdown-title">
-          MY SUBMISSIONS — {prevSubs.length} TOTAL
-        </div>
-
-        {prevSubs.map((s, i) => {
-          const isAC  = s.status?.toLowerCase() === "accepted";
-          const isTLE = s.status?.toLowerCase() === "time limit exceeded";
-          const statusColor = isAC ? "#39ff14" : isTLE ? "#ffb800" : "#ff2d78";
-          const statusIcon  = isAC ? "✓" : isTLE ? "⏱" : "✗";
-          return (
-            <button
-              key={s._id || i}
-              className="nt-scroll nt-pp-prev-item"
-              onClick={() => loadPrevSub(s)}
-            >
-              {/* status icon */}
-              <span style={{
-                color: statusColor,
-                textShadow: `0 0 6px ${statusColor}88`,
-                fontSize: ".65rem",
-                flexShrink: 0,
-                width: 14,
-              }}>
-                {statusIcon}
-              </span>
-
-              {/* status label */}
-              <span style={{
-                fontFamily: "'Share Tech Mono', monospace",
-                fontSize: ".44rem",
-                letterSpacing: ".1em",
-                color: statusColor,
-                flexShrink: 0,
-                minWidth: 50,
-              }}>
-                {isAC ? "AC" : isTLE ? "TLE" : "WA"}
-              </span>
-
-              {/* language */}
-              <span className="nt-pp-prev-lang">{s.language?.toUpperCase()}</span>
-
-              {/* date */}
-              <span className="nt-pp-prev-date">
-                {new Date(s.createdAt).toLocaleDateString()}
-              </span>
-
-              {/* time */}
-              <span className="nt-pp-prev-time">
-                {new Date(s.createdAt).toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" })}
-              </span>
-
-              {/* load */}
-              <span className="nt-pp-prev-load">LOAD →</span>
-            </button>
-          );
-
-        })}
-      </div>
-    )}
-
-  </div>
-)}
-
+              {/* ── PREVIOUS SUBMISSIONS DROPDOWN — hidden in any contest mode ── */}
+              {prevSubs.length > 0 && !inContest && (
+                <div className="nt-pp-prev-wrap">
+                  <button
+                    className="nt-pp-prev-btn"
+                    onClick={() => setShowPrevSubs(p => !p)}
+                  >
+                    ◈ {prevSubs.length} SUBMISSION{prevSubs.length !== 1 ? "S" : ""} {showPrevSubs ? "▴" : "▾"}
+                  </button>
+                  {showPrevSubs && (
+                    <div className="nt-pp-prev-dropdown max-h-[300px] overflow-y-auto overflow-x-hidden pr-1 cyber-scroll">
+                      <div className="nt-pp-prev-dropdown-title">
+                        MY SUBMISSIONS — {prevSubs.length} TOTAL
+                      </div>
+                      {prevSubs.map((s, i) => {
+                        const isAC  = s.status?.toLowerCase() === "accepted";
+                        const isTLE = s.status?.toLowerCase() === "time limit exceeded";
+                        const statusColor = isAC ? "#39ff14" : isTLE ? "#ffb800" : "#ff2d78";
+                        const statusIcon  = isAC ? "✓" : isTLE ? "⏱" : "✗";
+                        return (
+                          <button key={s._id || i} className="nt-scroll nt-pp-prev-item"
+                            onClick={() => loadPrevSub(s)}>
+                            <span style={{ color: statusColor, textShadow: `0 0 6px ${statusColor}88`,
+                              fontSize: ".65rem", flexShrink: 0, width: 14 }}>
+                              {statusIcon}
+                            </span>
+                            <span style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: ".44rem",
+                              letterSpacing: ".1em", color: statusColor, flexShrink: 0, minWidth: 50 }}>
+                              {isAC ? "AC" : isTLE ? "TLE" : "WA"}
+                            </span>
+                            <span className="nt-pp-prev-lang">{s.language?.toUpperCase()}</span>
+                            <span className="nt-pp-prev-date">
+                              {new Date(s.createdAt).toLocaleDateString()}
+                            </span>
+                            <span className="nt-pp-prev-time">
+                              {new Date(s.createdAt).toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" })}
+                            </span>
+                            <span className="nt-pp-prev-load">LOAD →</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* language selector */}
               <div className="nt-lang-wrap">
-                <select
-                  value={language}
-                  onChange={e => setLanguage(e.target.value)}
-                  className="nt-lang-select"
-                >
+                <select value={language} onChange={e => setLanguage(e.target.value)}
+                  className="nt-lang-select">
                   <option value="cpp">C++</option>
                   <option value="python">Python</option>
                   <option value="javascript">JavaScript</option>
@@ -297,10 +336,10 @@ const loadPrevSub = async (sub) => {
 
             <div className="nt-editor-wrap">
               <Editor
-                key={editorKey}      //          remounts with new code 
+                key={editorKey}
                 height="420px"
                 language={languageMap[language]}
-                defaultValue={code}       //     defaultValue respects remount 
+                defaultValue={code}
                 onChange={value => setCode(value || "")}
                 theme="vs-dark"
                 options={{

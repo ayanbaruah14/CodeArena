@@ -6,9 +6,10 @@ export const getRoomContest = async (req, res) => {
   try {
     const room = await Room
       .findOne({ roomId: req.params.roomId })
-      .populate("contest.problems", "title difficulty points");
+      .populate("contest.problems", "title points");
 
     if (!room) return res.status(404).json({ msg: "Room not found" });
+
     res.json({
       contest:  room.contest,
       users:    room.users,
@@ -26,7 +27,7 @@ export const getRoomLeaderboard = async (req, res) => {
   try {
     const room = await Room
       .findOne({ roomId: req.params.roomId })
-      .populate("contest.problems", "title difficulty");
+      .populate("contest.problems", "title points");
 
     if (!room) return res.status(404).json({ msg: "Room not found" });
 
@@ -34,12 +35,14 @@ export const getRoomLeaderboard = async (req, res) => {
       .sort((a, b) => b.score - a.score || b.solved - a.solved);
 
     res.json({
-      scores:   sorted,
-      problems: room.contest.problems,
-      status:   room.contest.status,
-      endTime:  room.contest.endTime,
-      duration: room.contest.duration,
-      roomId:   room.roomId,
+      scores:    sorted,
+      problems:  room.contest.problems,
+      status:    room.contest.status,
+      endTime:   room.contest.endTime,
+      duration:  room.contest.duration,
+      roomId:    room.roomId,
+      minPoints: room.contest.minPoints,
+      maxPoints: room.contest.maxPoints,
     });
   } catch (err) {
     res.status(500).json({ msg: err.message });

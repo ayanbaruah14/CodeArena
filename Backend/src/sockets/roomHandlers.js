@@ -72,14 +72,16 @@ export default function roomHandlers(io, socket) {
 
       // send contest state to joining user
       if (room.contest.status !== "none") {
-        await room.populate("contest.problems", "title difficulty");
+        await room.populate("contest.problems", "title points");
         socket.emit("contestState", {
-          status:    room.contest.status,
-          problems:  room.contest.problems,
-          startTime: room.contest.startTime,
-          endTime:   room.contest.endTime,
-          duration:  room.contest.duration,
-          scores:    room.contest.scores,
+          status:     room.contest.status,
+          problems:   room.contest.problems,
+          startTime:  room.contest.startTime,
+          endTime:    room.contest.endTime,
+          duration:   room.contest.duration,
+          scores:     room.contest.scores,
+          minPoints:  room.contest.minPoints,
+          maxPoints:  room.contest.maxPoints,
         });
       }
 
@@ -142,7 +144,6 @@ export default function roomHandlers(io, socket) {
       if (room.creator.toString() !== userId)
         return socket.emit("roomError", "Only creator can end room");
 
-      // end any running contest first
       if (room.contest.status === "active") {
         room.contest.status = "ended";
         room.contest.active = false;
@@ -193,8 +194,8 @@ export default function roomHandlers(io, socket) {
 
 
   // ================= SETUP CONTEST =================
-  // host picks difficulty + duration before starting
-  socket.on("setupContest", async ({ roomId, userId, difficulty, problemCount, duration }) => {
+  // host picks a points range + duration before starting
+  socket.on("setupContest", async ({ roomId, userId, minPoints, maxPoints, problemCount, duration }) => {
     try {
       const room = await Room.findOne({ roomId });
       if (!room) return;
@@ -205,17 +206,22 @@ export default function roomHandlers(io, socket) {
       if (room.contest.status === "active")
         return socket.emit("roomError", "Contest already running");
 
-      /* pick random problems by difficulty */
-      const query = difficulty === "mixed" ? {} : { difficulty };
+      // clamp + validate range
+      const lo = Math.max(0,    Number(minPoints) || 800);
+      const hi = Math.min(5000, Number(maxPoints) || 1600);
+      if (lo >= hi)
+        return socket.emit("roomError", "minPoints must be less than maxPoints");
+
+      // pick random problems within the points range
       const problems = await Problem.aggregate([
-        { $match: query },
-        { $sample: { size: Math.min(problemCount || 5, 20) } }
+        { $match: { points: { $gte: lo, $lte: hi } } },
+        { $sample: { size: Math.min(Number(problemCount) || 5, 20) } }
       ]);
 
       if (problems.length === 0)
-        return socket.emit("roomError", "No problems found for this difficulty");
+        return socket.emit("roomError", `No problems found in the ${lo}–${hi} points range`);
 
-      /* init scores for all current players */
+      // init scores for all current players
       const scores = room.users.map(u => ({
         userId:         u.userId,
         username:       u.username,
@@ -227,28 +233,29 @@ export default function roomHandlers(io, socket) {
       room.contest.status       = "waiting";
       room.contest.active       = false;
       room.contest.problems     = problems.map(p => p._id);
-      room.contest.difficulty   = difficulty || "mixed";
+      room.contest.minPoints    = lo;
+      room.contest.maxPoints    = hi;
       room.contest.problemCount = problems.length;
-      room.contest.duration     = Math.min(Math.max((duration || 30) * 60, 300), 10800); // seconds, 5min–3hr
+      room.contest.duration     = Math.min(Math.max((Number(duration) || 30) * 60, 300), 10800);
       room.contest.scores       = scores;
       room.contest.startTime    = null;
       room.contest.endTime      = null;
 
       await room.save();
-      await room.populate("contest.problems", "title difficulty");
+      await room.populate("contest.problems", "title points");
 
       io.to(roomId).emit("contestSetup", {
-        status:    "waiting",
-        problems:  room.contest.problems,
-        difficulty: room.contest.difficulty,
-        duration:  room.contest.duration,
-        scores:    room.contest.scores,
+        status:     "waiting",
+        problems:   room.contest.problems,
+        minPoints:  room.contest.minPoints,
+        maxPoints:  room.contest.maxPoints,
+        duration:   room.contest.duration,
+        scores:     room.contest.scores,
       });
 
-      // system message
       io.to(roomId).emit("receiveMessage", {
         system:  true,
-        message: `${room.users.find(u => u.userId.toString() === userId)?.username} set up a contest — waiting to start`,
+        message: `${room.users.find(u => u.userId.toString() === userId)?.username} set up a contest (${lo}–${hi} pts) — waiting to start`,
       });
 
     } catch (err) {
@@ -277,17 +284,18 @@ export default function roomHandlers(io, socket) {
       room.contest.endTime   = new Date(Date.now() + room.contest.duration * 1000);
 
       await room.save();
-      await room.populate("contest.problems", "title difficulty");
+      await room.populate("contest.problems", "title points");
 
       io.to(roomId).emit("contestStarted", {
-        problems:  room.contest.problems,
-        startTime: room.contest.startTime,
-        endTime:   room.contest.endTime,
-        duration:  room.contest.duration,
-        scores:    room.contest.scores,
+        problems:   room.contest.problems,
+        startTime:  room.contest.startTime,
+        endTime:    room.contest.endTime,
+        duration:   room.contest.duration,
+        scores:     room.contest.scores,
+        minPoints:  room.contest.minPoints,
+        maxPoints:  room.contest.maxPoints,
       });
 
-      // system message
       io.to(roomId).emit("receiveMessage", {
         system:  true,
         message: "⚡ CONTEST STARTED — May the best coder win!",
@@ -328,14 +336,15 @@ export default function roomHandlers(io, socket) {
 
 
   // ================= PROBLEM SOLVED IN CONTEST =================
-  socket.on("contestProblemSolved", async ({ roomId, userId, problemId, points }) => {
+  // Emitted by the problem page when a submission comes back Accepted
+  socket.on("contestProblemSolved", async ({ roomId, userId, problemId }) => {
     try {
       const room = await Room.findOne({ roomId });
       if (!room) return;
 
       if (room.contest.status !== "active") return;
 
-      // check time not expired
+      // reject if time expired
       if (new Date() > new Date(room.contest.endTime)) {
         room.contest.status = "ended";
         room.contest.active = false;
@@ -347,32 +356,38 @@ export default function roomHandlers(io, socket) {
       const player = room.contest.scores.find(s => s.userId.toString() === userId);
       if (!player) return;
 
-      // prevent double counting
-      const already = player.solvedProblems.map(id => id.toString()).includes(problemId);
-      if (already) return;
+      // prevent double-counting
+      if (player.solvedProblems.map(id => id.toString()).includes(problemId)) return;
+
+      // look up the problem to get its points value
+      const problem = await Problem.findById(problemId).select("title points");
+      if (!problem) return;
+
+      // check the problem is actually in this contest
+      const inContest = room.contest.problems.map(id => id.toString()).includes(problemId);
+      if (!inContest) return;
+
+      const earned = problem.points || 100;
 
       player.solved         += 1;
-      player.score          += points || 100;
+      player.score          += earned;
       player.solvedProblems.push(problemId);
 
       await room.save();
-      await room.populate("contest.problems", "title difficulty");
 
-      const problem = room.contest.problems.find(p => p._id.toString() === problemId);
-      const sorted  = [...room.contest.scores].sort((a, b) => b.score - a.score);
+      const sorted = [...room.contest.scores].sort((a, b) => b.score - a.score);
 
-      // broadcast live score update to all in room
       io.to(roomId).emit("contestScoreUpdate", {
-        scores:  sorted,
+        scores:       sorted,
         userId,
-        username: player.username,
-        problemTitle: problem?.title || "a problem",
+        username:     player.username,
+        problemTitle: problem.title,
+        pointsEarned: earned,
       });
 
-      // system message
       io.to(roomId).emit("receiveMessage", {
         system:  true,
-        message: `✓ ${player.username} solved "${problem?.title || "a problem"}"`,
+        message: `✓ ${player.username} solved "${problem.title}" (+${earned} pts)`,
       });
 
     } catch (err) {
@@ -421,17 +436,19 @@ export default function roomHandlers(io, socket) {
     try {
       const room = await Room
         .findOne({ roomId })
-        .populate("contest.problems", "title difficulty");
+        .populate("contest.problems", "title points");
 
       if (!room) return;
 
       const sorted = [...room.contest.scores].sort((a, b) => b.score - a.score);
 
       socket.emit("contestLeaderboard", {
-        scores:   sorted,
-        problems: room.contest.problems,
-        status:   room.contest.status,
-        endTime:  room.contest.endTime,
+        scores:    sorted,
+        problems:  room.contest.problems,
+        status:    room.contest.status,
+        endTime:   room.contest.endTime,
+        minPoints: room.contest.minPoints,
+        maxPoints: room.contest.maxPoints,
       });
 
     } catch (err) {

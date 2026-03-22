@@ -3,167 +3,337 @@ import { useParams, useNavigate } from "react-router-dom";
 import socket from "../socket";
 import API from "../api/api";
 
-function decodeToken(token) {
-  try {
-    const b = token.split(".")[1];
-    return JSON.parse(atob(b + "=".repeat((4 - b.length % 4) % 4)));
-  } catch { return null; }
-}
+const fmt = (ms) => {
+  if (ms === null) return "--:--";
+  const s = Math.floor(ms / 1000);
+  return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+};
 
-function tierOf(r) {
-  if (!r || r < 1200) return { title: "NEWBIE",     color: "#888"    };
-  if (r < 1400)       return { title: "PUPIL",       color: "#39ff14" };
-  if (r < 1600)       return { title: "APPRENTICE",  color: "#00f5ff" };
-  if (r < 1900)       return { title: "SPECIALIST",  color: "#a855f7" };
-  if (r < 2100)       return { title: "EXPERT",      color: "#ffb800" };
-  if (r < 2400)       return { title: "CAND. MASTER",color: "#ff8c00" };
-  return                     { title: "MASTER",      color: "#ff2d78" };
-}
+const PRESETS = [
+  { label: "Newbie",     min: 800,  max: 1200, color: "#888"    },
+  { label: "Pupil",      min: 1200, max: 1500, color: "#39ff14" },
+  { label: "Specialist", min: 1500, max: 1900, color: "#00f5ff" },
+  { label: "Expert",     min: 1900, max: 2400, color: "#ffb800" },
+  { label: "Mixed",      min: 800,  max: 2400, color: "#ff2d78" },
+];
 
 export default function RoomContest() {
-  const { roomId }  = useParams();
-  const navigate    = useNavigate();
-  const timerRef    = useRef(null);
+  const { roomId } = useParams();
+  const navigate   = useNavigate();
+  const timerRef   = useRef(null);
 
-  const token   = localStorage.getItem("token");
-  const decoded = decodeToken(token);
-  const myId    = decoded?.id;
-
-  const [contest,   setContest]   = useState(null);
-  const [scores,    setScores]    = useState([]);
-  const [creator,   setCreator]   = useState(null);
-  const [loading,   setLoading]   = useState(true);
-  const [timeLeft,  setTimeLeft]  = useState(null);
-  const [feed,      setFeed]      = useState([]);
-
-  /* setup form state (host only) */
-  const [difficulty,   setDifficulty]   = useState("mixed");
+  const [myId,         setMyId]         = useState(null);
+  const [contest,      setContest]      = useState(null);
+  const [scores,       setScores]       = useState([]);
+  const [creator,      setCreator]      = useState(null);
+  const [loading,      setLoading]      = useState(true);
+  const [timeLeft,     setTimeLeft]     = useState(null);
+  const [feed,         setFeed]         = useState([]);
+  const [minPoints,    setMinPoints]    = useState(800);
+  const [maxPoints,    setMaxPoints]    = useState(1600);
   const [problemCount, setProblemCount] = useState(5);
   const [duration,     setDuration]     = useState(30);
   const [setting,      setSetting]      = useState(false);
+  const [setupError,   setSetupError]   = useState("");
 
-  /* fetch initial contest state */
   useEffect(() => {
-    API.get(`/rooms/${roomId}/contest`)
+    API.get("/auth/me", { withCredentials: true })
+      .then(res => setMyId(res.data.user._id?.toString()))
+      .catch(() => navigate("/login"));
+  }, []);
+
+  useEffect(() => {
+    API.get(`/rooms/${roomId}/contest`, { withCredentials: true })
       .then(res => {
-        setContest(res.data.contest);
-        setScores(res.data.contest.scores || []);
-        setCreator(res.data.creator?.toString() || res.data.creator);
+        const c = res.data.contest;
+        setContest(c);
+        setScores(c.scores || []);
+        setCreator(res.data.creator?.toString());
+        if (c.minPoints)    setMinPoints(c.minPoints);
+        if (c.maxPoints)    setMaxPoints(c.maxPoints);
+        if (c.duration)     setDuration(Math.floor(c.duration / 60));
+        if (c.problemCount) setProblemCount(c.problemCount);
         setLoading(false);
       })
-      .catch(() => { navigate(`/room/${roomId}`); });
+      .catch(() => navigate(`/room/${roomId}`));
   }, [roomId]);
 
-  /* socket listeners */
   useEffect(() => {
-    /* contest was set up by host */
     socket.on("contestSetup", (data) => {
       setContest(prev => ({ ...prev, ...data }));
       setScores(data.scores || []);
-      addFeed(`Contest set up — ${data.problems?.length} problems · ${Math.floor(data.duration / 60)} min`);
+      addFeed(`Contest ready · ${data.problems?.length} problems · ${Math.floor(data.duration / 60)} min · ${data.minPoints}–${data.maxPoints} pts`);
+      setSetupError("");
     });
-
-    /* contest started */
     socket.on("contestStarted", (data) => {
       setContest(prev => ({ ...prev, ...data, status: "active" }));
       setScores(data.scores || []);
       addFeed("⚡ BATTLE STARTED");
     });
-
-    /* live score update */
-    socket.on("contestScoreUpdate", ({ scores: s, username, problemTitle }) => {
+    socket.on("contestScoreUpdate", ({ scores: s, username, problemTitle, pointsEarned }) => {
       setScores(s);
-      addFeed(`✓ ${username} solved "${problemTitle}"`);
+      addFeed(`✓ ${username} solved "${problemTitle}"${pointsEarned ? ` +${pointsEarned} pts` : ""}`);
     });
-
-    /* contest ended */
     socket.on("contestEnded", ({ scores: s }) => {
       setScores(s);
       setContest(prev => ({ ...prev, status: "ended" }));
       clearInterval(timerRef.current);
       navigate(`/room/${roomId}/contest/leaderboard`);
     });
-
+    socket.on("roomError", (msg) => { setSetupError(msg); setSetting(false); });
     return () => {
-      socket.off("contestSetup");
-      socket.off("contestStarted");
-      socket.off("contestScoreUpdate");
-      socket.off("contestEnded");
+      ["contestSetup","contestStarted","contestScoreUpdate","contestEnded","roomError"]
+        .forEach(ev => socket.off(ev));
     };
   }, [roomId]);
 
-  /* countdown timer */
   useEffect(() => {
     if (contest?.status !== "active" || !contest?.endTime) return;
     const tick = () => {
       const left = Math.max(0, new Date(contest.endTime).getTime() - Date.now());
       setTimeLeft(left);
-      if (left === 0) {
-        clearInterval(timerRef.current);
-        navigate(`/room/${roomId}/contest/leaderboard`);
-      }
+      if (left === 0) { clearInterval(timerRef.current); navigate(`/room/${roomId}/contest/leaderboard`); }
     };
     tick();
     timerRef.current = setInterval(tick, 1000);
     return () => clearInterval(timerRef.current);
   }, [contest?.status, contest?.endTime]);
 
-  const addFeed = (msg) =>
-    setFeed(f => [{ msg, ts: Date.now() }, ...f.slice(0, 14)]);
+  const addFeed = msg => setFeed(f => [{ msg, ts: Date.now() }, ...f.slice(0, 14)]);
 
-  const fmt = (ms) => {
-    if (ms === null) return "--:--";
-    const s   = Math.floor(ms / 1000);
-    const m   = Math.floor(s / 60);
-    const sec = s % 60;
-    return `${String(m).padStart(2,"0")}:${String(sec).padStart(2,"0")}`;
-  };
-
-  /* host: setup contest */
   const handleSetup = () => {
+    setSetupError("");
+    if (minPoints >= maxPoints) { setSetupError("Min points must be less than max points"); return; }
     setSetting(true);
-    socket.emit("setupContest", {
-      roomId, userId: myId,
-      difficulty, problemCount,
-      duration,
-    });
-    setTimeout(() => setSetting(false), 1500);
+    socket.emit("setupContest", { roomId, userId: myId, minPoints, maxPoints, problemCount, duration });
+    setTimeout(() => setSetting(false), 2000);
   };
+  const handleStart = () => socket.emit("startContest", { roomId, userId: myId });
+  const handleEnd   = () => socket.emit("endContest",   { roomId, userId: myId });
 
-  /* host: start contest */
-  const handleStart = () => {
-    socket.emit("startContest", { roomId, userId: myId });
-  };
-
-  /* host: end contest early */
-  const handleEnd = () => {
-    socket.emit("endContest", { roomId, userId: myId });
-  };
-
-  const isHost     = myId && creator && (myId === creator || myId === creator?.toString());
+  const myIdStr      = myId?.toString().trim() ?? "";
+  const creatorStr   = creator?.toString().trim() ?? "";
+  const isHost       = !!(myIdStr && creatorStr && myIdStr === creatorStr);
+  const creatorReady = !!creatorStr;
+  const urgent       = timeLeft !== null && timeLeft < 60000;
+  const rangeValid   = minPoints < maxPoints;
   const sortedScores = [...scores].sort((a, b) => b.score - a.score || b.solved - a.solved);
-  const urgent     = timeLeft !== null && timeLeft < 60000;
+  const activePreset = PRESETS.find(p => p.min === minPoints && p.max === maxPoints);
 
-  if (loading) return (
-    <div style={{ background:"#06030f", minHeight:"100vh" }}>
+  /* ── LOADING ── */
+  if (loading || !creatorReady) return (
+    <div className="rc-page">
       <div className="nt-scanlines" /><div className="nt-vignette" />
-      <div className="nt-loading-wrap" style={{ marginTop:"8rem" }}>
+      <div className="nt-loading-wrap" style={{ marginTop: "8rem" }}>
         <div className="nt-loading-bar"><div className="nt-loading-fill" /></div>
         <p className="nt-loading-text"><span className="nt-blink">▋</span> LOADING CONTEST...</p>
       </div>
     </div>
   );
 
+  /* ══════════════════════════════════════════════════
+     HOST — CREATE CONTEST  (full dedicated page)
+  ══════════════════════════════════════════════════ */
+  if (isHost && contest?.status === "none") return (
+    <div className="rc-page">
+      <div className="nt-scanlines" /><div className="nt-vignette" /><div className="nt-city" />
+
+      <div className="nt-main rc-create-wrap">
+
+        {/* eyebrow + title */}
+        <div className="nt-header">
+          <div className="nt-eyebrow">
+            <span className="nt-eyebrow-line" />
+            <span className="nt-eyebrow-text">ROOM {roomId} — NEW CONTEST</span>
+            <span className="nt-eyebrow-tail" />
+          </div>
+          <h1 className="nt-h1">
+            <span className="nt-h1-l1">CREATE</span>
+            <span className="nt-h1-l2" data-text="CONTEST">CONTEST</span>
+          </h1>
+          <p className="nt-sub">// PROBLEMS AUTO-SELECTED FROM YOUR BANK WITHIN THE RANGE</p>
+          <button onClick={() => navigate(`/room/${roomId}`)} className="nt-pp-prev-btn rc-back-override">
+            ← BACK TO ROOM
+          </button>
+        </div>
+
+        <div className="nt-divider" />
+
+        {/* form card */}
+        <div className="rc-form-card">
+
+          {/* ── QUICK PRESETS ── */}
+          <div className="rc-form-section">
+            <div className="nt-section-label">QUICK PRESETS</div>
+            <div className="rc-presets-grid">
+              {PRESETS.map(p => {
+                const on = minPoints === p.min && maxPoints === p.max;
+                return (
+                  <button
+                    key={p.label}
+                    onClick={() => { setMinPoints(p.min); setMaxPoints(p.max); }}
+                    className={`rc-preset-btn ${on ? "rc-preset-btn--on" : ""}`}
+                    style={on ? { "--pc": p.color } : {}}
+                  >
+                    <span className="rc-preset-dot" style={{ background: p.color, boxShadow: `0 0 6px ${p.color}` }} />
+                    <span className="rc-preset-label">{p.label}</span>
+                    <span className="rc-preset-range">{p.min}–{p.max}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="nt-divider rc-inner-divider" />
+
+          {/* ── POINTS RANGE ── */}
+          <div className="rc-form-section">
+            <div className="nt-section-label">POINTS RANGE</div>
+
+            <div className="rc-sliders-row">
+              {/* min */}
+              <div className="rc-slider-field">
+                <div className="rc-slider-header">
+                  <span className="rc-slider-label">MIN POINTS</span>
+                  <span className="rc-slider-val" style={{ color: "#39ff14" }}>{minPoints}</span>
+                </div>
+                <input type="range" min="0" max="4800" step="100" value={minPoints}
+                  onChange={e => setMinPoints(Number(e.target.value))}
+                  className="rc-range-input rc-range-green" />
+                <div className="rc-range-hints"><span>0</span><span>2400</span><span>4800</span></div>
+              </div>
+
+              {/* max */}
+              <div className="rc-slider-field">
+                <div className="rc-slider-header">
+                  <span className="rc-slider-label">MAX POINTS</span>
+                  <span className="rc-slider-val" style={{ color: "#ff2d78" }}>{maxPoints}</span>
+                </div>
+                <input type="range" min="200" max="5000" step="100" value={maxPoints}
+                  onChange={e => setMaxPoints(Number(e.target.value))}
+                  className="rc-range-input rc-range-pink" />
+                <div className="rc-range-hints"><span>200</span><span>2500</span><span>5000</span></div>
+              </div>
+            </div>
+
+            {/* visual range bar */}
+            <div className="rc-range-bar-wrap">
+              <span className="rc-range-bar-label">RANGE</span>
+              <span className="rc-range-bar-lo">{minPoints}</span>
+              <div className="rc-range-bar-track">
+                <div className="rc-range-bar-fill" style={{
+                  left:  `${(minPoints / 5000) * 100}%`,
+                  right: `${100 - (maxPoints / 5000) * 100}%`,
+                  background: rangeValid ? "linear-gradient(90deg,#39ff14,#ff2d78)" : "#ff4444",
+                }} />
+              </div>
+              <span className="rc-range-bar-hi">{maxPoints}</span>
+              <span className="rc-range-bar-unit">PTS</span>
+              {!rangeValid && <span className="rc-range-bar-warn">⚠ INVALID</span>}
+            </div>
+          </div>
+
+          <div className="nt-divider rc-inner-divider" />
+
+          {/* ── PROBLEMS + DURATION ── */}
+          <div className="rc-form-section">
+            <div className="nt-section-label">CONTEST SETTINGS</div>
+            <div className="rc-sliders-row">
+              <div className="rc-slider-field">
+                <div className="rc-slider-header">
+                  <span className="rc-slider-label">NUMBER OF PROBLEMS</span>
+                  <span className="rc-slider-val" style={{ color: "#00f5ff" }}>{problemCount}</span>
+                </div>
+                <input type="range" min="1" max="20" value={problemCount}
+                  onChange={e => setProblemCount(Number(e.target.value))}
+                  className="rc-range-input rc-range-cyan" />
+                <div className="rc-range-hints"><span>1</span><span>10</span><span>20</span></div>
+              </div>
+
+              <div className="rc-slider-field">
+                <div className="rc-slider-header">
+                  <span className="rc-slider-label">TIME LIMIT</span>
+                  <span className="rc-slider-val" style={{ color: "#ffb800" }}>{duration} min</span>
+                </div>
+                <input type="range" min="5" max="180" step="5" value={duration}
+                  onChange={e => setDuration(Number(e.target.value))}
+                  className="rc-range-input rc-range-amber" />
+                <div className="rc-range-hints"><span>5m</span><span>1.5hr</span><span>3hr</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div className="nt-divider rc-inner-divider" />
+
+          {/* ── SUMMARY ── */}
+          <div className="rc-summary-box">
+            <div className="rc-summary-row">
+              <span className="rc-summary-icon" style={{ color: "#00f5ff" }}>◈</span>
+              <span className="rc-summary-text">
+                <b style={{ color: "#00f5ff" }}>{problemCount}</b> problems &nbsp;·&nbsp;
+                range <b style={{ color: "#39ff14" }}>{minPoints}</b>–<b style={{ color: "#ff2d78" }}>{maxPoints}</b> pts
+                &nbsp;·&nbsp; <b style={{ color: "#ffb800" }}>{duration}</b> min
+              </span>
+              {activePreset && (
+                <span className="rc-summary-preset" style={{ color: activePreset.color, borderColor: activePreset.color + "44" }}>
+                  {activePreset.label}
+                </span>
+              )}
+            </div>
+            <div className="rc-summary-hint">// problems randomly selected from your problem bank</div>
+          </div>
+
+          {/* error */}
+          {setupError && (
+            <div className="rc-error-box">
+              <span>⚠</span>
+              <span>{setupError}</span>
+            </div>
+          )}
+
+          {/* CTA */}
+          <button
+            onClick={handleSetup}
+            disabled={setting || !rangeValid}
+            className="rc-create-btn"
+          >
+            {setting
+              ? <><span className="nt-submit-spinner">◈</span> CREATING CONTEST...</>
+              : <>⚡ CREATE CONTEST</>}
+          </button>
+
+        </div>
+      </div>
+    </div>
+  );
+
+  /* ══════════════════════════════════════════════════
+     NON-HOST — waiting for host to create
+  ══════════════════════════════════════════════════ */
+  if (!isHost && contest?.status === "none") return (
+    <div className="rc-page rc-center">
+      <div className="nt-scanlines" /><div className="nt-vignette" />
+      <div className="rc-waiting-screen">
+        <div className="rc-waiting-icon">◈</div>
+        <h2 className="rc-waiting-title">WAITING FOR HOST</h2>
+        <p className="rc-waiting-sub">// HOST IS SETTING UP THE CONTEST...</p>
+        <button onClick={() => navigate(`/room/${roomId}`)} className="nt-pp-prev-btn rc-back-override">
+          ← BACK TO ROOM
+        </button>
+      </div>
+    </div>
+  );
+
+  /* ══════════════════════════════════════════════════
+     MAIN CONTEST VIEW  (waiting / active / ended)
+  ══════════════════════════════════════════════════ */
   return (
-    <div style={{ background:"#06030f", minHeight:"100vh", overflowX:"hidden", cursor:"crosshair",
-      fontFamily:"'Rajdhani',sans-serif", color:"#c8f0ff" }}>
-      <div className="nt-scanlines" />
-      <div className="nt-vignette" />
-      <div className="nt-city" />
+    <div className="rc-page">
+      <div className="nt-scanlines" /><div className="nt-vignette" /><div className="nt-city" />
 
       <div className="nt-main">
 
-        {/* ── HEADER ── */}
+        {/* ── PAGE HEADER ── */}
         <div className="nt-header">
           <div className="nt-eyebrow">
             <span className="nt-eyebrow-line" />
@@ -176,7 +346,7 @@ export default function RoomContest() {
           </h1>
 
           {/* HUD */}
-          <div className="nt-hud" style={{ marginTop:"1rem" }}>
+          <div className="nt-hud" style={{ marginTop: "1rem" }}>
             <div className="nt-hud-item">
               <span className="nt-hud-label">ROOM</span>
               <span className="nt-hud-val">{roomId}</span>
@@ -189,23 +359,31 @@ export default function RoomContest() {
               <span className="nt-hud-label">PROBLEMS</span>
               <span className="nt-hud-val">{contest?.problems?.length || 0}</span>
             </div>
+            {contest?.minPoints != null && (
+              <div className="nt-hud-item">
+                <span className="nt-hud-label">RANGE</span>
+                <span className="nt-hud-val nt-hud-val--amber">{contest.minPoints}–{contest.maxPoints}</span>
+              </div>
+            )}
             <div className="nt-hud-item">
               <span className="nt-hud-label">STATUS</span>
               <span className="nt-hud-val" style={{
                 color: contest?.status === "active" ? "#39ff14"
                      : contest?.status === "ended"  ? "rgba(255,255,255,.3)"
                      : "#00f5ff",
-                textShadow: contest?.status === "active" ? "0 0 8px #39ff1488" : "none"
+                textShadow: contest?.status === "active" ? "0 0 8px #39ff1488" : "none",
               }}>
                 {(contest?.status || "NONE").toUpperCase()}
               </span>
             </div>
             {contest?.status === "active" && timeLeft !== null && (
-              <div className="nt-hud-item">
+              <div className={`nt-hud-item ${urgent ? "rc-hud-urgent" : ""}`}>
                 <span className="nt-hud-label">TIME LEFT</span>
                 <span className="nt-hud-val" style={{
                   color: urgent ? "#ff2d78" : "#ffb800",
                   textShadow: urgent ? "0 0 8px #ff2d7888" : "0 0 8px #ffb80088",
+                  fontFamily: "'Share Tech Mono', monospace",
+                  fontSize: "1.1rem",
                 }}>
                   {fmt(timeLeft)}
                 </span>
@@ -213,333 +391,176 @@ export default function RoomContest() {
             )}
           </div>
 
-          {/* back to room */}
-          <button
-            onClick={() => navigate(`/room/${roomId}`)}
-            className="nt-pp-prev-btn"
-            style={{ marginTop:".8rem", color:"rgba(255,255,255,.3)", borderColor:"rgba(255,255,255,.1)" }}
-          >
+          <button onClick={() => navigate(`/room/${roomId}`)} className="nt-pp-prev-btn rc-back-override">
             ← BACK TO ROOM
           </button>
         </div>
 
+        {/* countdown progress bar */}
+        {contest?.status === "active" && timeLeft !== null && contest?.duration && (
+          <div className="rc-progress-track">
+            <div className="rc-progress-fill" style={{
+              width: `${(timeLeft / (contest.duration * 1000)) * 100}%`,
+              background: urgent ? "#ff2d78" : "#39ff14",
+              boxShadow: urgent ? "0 0 8px #ff2d78" : "0 0 8px #39ff14",
+            }} />
+          </div>
+        )}
+
         <div className="nt-divider" />
 
         {/* ── MAIN GRID ── */}
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 320px", gap:"1.2rem", alignItems:"start" }}>
+        <div className="rc-main-grid">
 
           {/* ── LEFT ── */}
-          <div style={{ display:"flex", flexDirection:"column", gap:"1.2rem" }}>
+          <div className="flex flex-col gap-4">
 
-            {/* timer bar */}
-            {contest?.status === "active" && (
-              <div className={`br-timer ${urgent ? "br-timer--urgent" : ""}`}>
-                <span className="br-timer-label">TIME REMAINING</span>
-                <span className="br-timer-val">{fmt(timeLeft)}</span>
-              </div>
-            )}
-
-            {/* ── HOST SETUP PANEL ── */}
-            {isHost && contest?.status === "none" && (
-              <div style={{ background:"#0d0520", border:"1px solid rgba(255,45,120,.12)",
-                borderTop:"2px solid #ff2d78", padding:"1.4rem" }}>
-                <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"1rem",
-                  letterSpacing:".08em", color:"#fff", marginBottom:"1.2rem",
-                  display:"flex", alignItems:"center", gap:8 }}>
-                  <span style={{ color:"#ff2d78", filter:"drop-shadow(0 0 6px #ff2d78)" }}>⚡</span>
-                  SETUP CONTEST
-                </div>
-
-                {/* difficulty */}
-                <div className="br-field">
-                  <label className="br-label">DIFFICULTY</label>
-                  <div className="br-options">
-                    {["easy","medium","hard","mixed"].map(d => (
-                      <button key={d} className={`br-option ${difficulty===d?"br-option--active":""}`}
-                        style={difficulty===d ? {
-                          borderColor: d==="easy"?"#39ff14":d==="medium"?"#ffb800":d==="hard"?"#ff2d78":"#00f5ff",
-                          color:       d==="easy"?"#39ff14":d==="medium"?"#ffb800":d==="hard"?"#ff2d78":"#00f5ff",
-                          background:  d==="easy"?"rgba(57,255,20,.08)":d==="medium"?"rgba(255,184,0,.08)":d==="hard"?"rgba(255,45,120,.08)":"rgba(0,245,255,.08)",
-                        } : {}}
-                        onClick={() => setDifficulty(d)}>
-                        {d.toUpperCase()}
-                      </button>
+            {/* HOST: contest configured, ready to start */}
+            {isHost && contest?.status === "waiting" && (
+              <div className="rc-panel rc-panel--cyan">
+                <div className="rc-panel-hdr rc-panel-hdr--cyan">◈ CONTEST READY</div>
+                <div className="p-5 flex flex-col gap-5">
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { label: "PROBLEMS", val: contest.problems?.length, color: "#00f5ff" },
+                      { label: "DURATION", val: `${Math.floor((contest.duration||0)/60)} MIN`, color: "#ffb800" },
+                      { label: "RANGE",    val: `${contest.minPoints}–${contest.maxPoints}`, color: "#39ff14" },
+                    ].map(({ label, val, color }) => (
+                      <div key={label} className="rc-stat-tile">
+                        <span className="rc-stat-label">{label}</span>
+                        <span className="rc-stat-val" style={{ color }}>{val}</span>
+                      </div>
                     ))}
                   </div>
-                </div>
-
-                {/* problem count */}
-                <div className="br-field" style={{ marginTop:".8rem" }}>
-                  <label className="br-label">
-                    PROBLEMS
-                    <span className="br-field-val">{problemCount}</span>
-                  </label>
-                  <input type="range" min="1" max="20" value={problemCount}
-                    onChange={e => setProblemCount(Number(e.target.value))}
-                    className="br-slider" />
-                  <div className="br-slider-hints"><span>1</span><span>10</span><span>20</span></div>
-                </div>
-
-                {/* duration */}
-                <div className="br-field" style={{ marginTop:".8rem" }}>
-                  <label className="br-label">
-                    DURATION
-                    <span className="br-field-val">{duration} min</span>
-                  </label>
-                  <input type="range" min="5" max="180" step="5" value={duration}
-                    onChange={e => setDuration(Number(e.target.value))}
-                    className="br-slider" />
-                  <div className="br-slider-hints"><span>5m</span><span>1hr</span><span>3hr</span></div>
-                </div>
-
-                <button className="br-start-btn" style={{ marginTop:"1rem" }}
-                  onClick={handleSetup} disabled={setting}>
-                  {setting
-                    ? <><span className="nt-submit-spinner">◈</span> SETTING UP...</>
-                    : <>◈ SETUP CONTEST</>}
-                </button>
-              </div>
-            )}
-
-            {/* ── WAITING — HOST ── */}
-            {isHost && contest?.status === "waiting" && (
-              <div style={{ background:"rgba(0,245,255,.03)", border:"1px solid rgba(0,245,255,.15)",
-                borderTop:"2px solid #00f5ff", padding:"1.4rem" }}>
-                <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"1rem",
-                  letterSpacing:".08em", color:"#00f5ff", textShadow:"0 0 10px #00f5ff88",
-                  marginBottom:".5rem" }}>
-                  ◈ CONTEST READY
-                </div>
-                <p style={{ fontFamily:"'Share Tech Mono',monospace", fontSize:".5rem",
-                  color:"rgba(0,245,255,.4)", letterSpacing:".1em", marginBottom:"1rem" }}>
-                  {contest.problems?.length} problems · {Math.floor((contest.duration||0)/60)} minutes
-                  · {contest.difficulty?.toUpperCase()}
-                </p>
-                <div style={{ display:"flex", gap:8 }}>
-                  <button className="br-start-btn" onClick={handleStart}>
-                    ⚡ START BATTLE
-                  </button>
-                  <button className="br-start-btn"
-                    style={{ background:"rgba(255,45,120,.06)", borderColor:"rgba(255,45,120,.3)",
-                      borderTopColor:"#ff2d78", color:"#ff2d78" }}
-                    onClick={handleSetup}>
-                    ◈ RECONFIGURE
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* ── WAITING — NON-HOST ── */}
-            {!isHost && (contest?.status === "none" || contest?.status === "waiting") && (
-              <div style={{ background:"rgba(0,245,255,.03)", border:"1px solid rgba(0,245,255,.15)",
-                borderTop:"2px solid #00f5ff", padding:"2rem", textAlign:"center" }}>
-                <div style={{ fontSize:"2rem", marginBottom:".8rem" }}>
-                  <span className="nt-submit-spinner" style={{ fontSize:"1.8rem", color:"#00f5ff" }}>◈</span>
-                </div>
-                <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"1.1rem",
-                  letterSpacing:".1em", color:"#00f5ff", textShadow:"0 0 10px #00f5ff88",
-                  marginBottom:".5rem" }}>
-                  WAITING FOR HOST
-                </div>
-                <p style={{ fontFamily:"'Share Tech Mono',monospace", fontSize:".5rem",
-                  color:"rgba(0,245,255,.35)", letterSpacing:".12em" }}>
-                  {contest?.status === "waiting"
-                    ? "// HOST IS ABOUT TO START — GET READY"
-                    : "// HOST IS SETTING UP THE CONTEST..."}
-                </p>
-                {contest?.status === "waiting" && (
-                  <div style={{ marginTop:"1rem", fontFamily:"'Share Tech Mono',monospace",
-                    fontSize:".52rem", color:"rgba(255,255,255,.2)", letterSpacing:".1em" }}>
-                    {contest.problems?.length} PROBLEMS &nbsp;·&nbsp;
-                    {Math.floor((contest.duration||0)/60)} MIN &nbsp;·&nbsp;
-                    {contest.difficulty?.toUpperCase()}
+                  <div className="flex gap-3">
+                    <button onClick={handleStart} className="rc-create-btn flex-1">⚡ START BATTLE</button>
+                    <button
+                      onClick={() => setContest(prev => ({ ...prev, status: "none" }))}
+                      className="rc-ghost-btn flex-1"
+                    >◈ RECONFIGURE</button>
                   </div>
-                )}
+                </div>
               </div>
             )}
 
-            {/* ── ACTIVE CONTEST — PROBLEM LIST ── */}
-            {contest?.status === "active" && (
-              <div style={{ background:"#0d0520", border:"1px solid rgba(255,45,120,.12)",
-                borderTop:"2px solid #ff2d78" }}>
-                <div style={{ padding:".8rem 1.2rem", borderBottom:"1px solid rgba(255,45,120,.1)",
-                  background:"rgba(255,45,120,.04)", fontFamily:"'Share Tech Mono',monospace",
-                  fontSize:".52rem", letterSpacing:".22em", color:"rgba(255,45,120,.6)" }}>
-                  PROBLEMS — CLICK TO SOLVE
+            {/* NON-HOST: lobby while waiting */}
+            {!isHost && contest?.status === "waiting" && (
+              <div className="rc-panel rc-panel--cyan rc-lobby-panel">
+                <div className="rc-panel-hdr rc-panel-hdr--cyan">◈ GET READY</div>
+                <div className="flex flex-col items-center gap-4 py-10 px-6 text-center">
+                  <div className="rc-waiting-icon rc-waiting-icon--sm">◈</div>
+                  <div>
+                    <h3 className="rc-lobby-title">HOST IS ABOUT TO START</h3>
+                    <p className="rc-lobby-sub">// STANDBY FOR BATTLE</p>
+                  </div>
+                  <div className="rc-lobby-stats">
+                    <span>{contest.problems?.length} PROBLEMS</span>
+                    <span className="rc-lobby-dot">·</span>
+                    <span>{Math.floor((contest.duration||0)/60)} MIN</span>
+                    <span className="rc-lobby-dot">·</span>
+                    <span>{contest.minPoints}–{contest.maxPoints} PTS</span>
+                  </div>
                 </div>
-                <div style={{ padding:".8rem" }}>
+              </div>
+            )}
+
+            {/* ACTIVE: problem list */}
+            {contest?.status === "active" && (
+              <div className="rc-panel">
+                <div className="rc-panel-hdr">PROBLEMS — CLICK TO SOLVE</div>
+                <div className="flex flex-col gap-1 p-3">
                   {contest.problems?.map((p, i) => {
                     const mySolved = scores
                       .find(s => s.userId?.toString() === myId)
                       ?.solvedProblems?.map(id => id.toString()) || [];
                     const solved = mySolved.includes(p._id?.toString());
                     return (
-                      <div
+                      <button
                         key={p._id}
-                        onClick={() => navigate(`/problem/${p._id}`)}
-                        style={{
-                          display:"flex", alignItems:"center", gap:12,
-                          padding:".8rem 1rem", marginBottom:4,
-                          background: solved ? "rgba(57,255,20,.04)" : "#06030f",
-                          border: solved ? "1px solid rgba(57,255,20,.2)" : "1px solid rgba(255,45,120,.08)",
-                          borderLeft: solved ? "2px solid #39ff14" : "2px solid rgba(255,45,120,.3)",
-                          cursor:"pointer", transition:"all .2s",
+                        onClick={() => {
+                          localStorage.setItem("activeContest", JSON.stringify({ roomId }));
+                          navigate(`/problem/${p._id}`);
                         }}
-                        onMouseEnter={e => !solved && (e.currentTarget.style.borderLeftColor="#ff2d78")}
-                        onMouseLeave={e => !solved && (e.currentTarget.style.borderLeftColor="rgba(255,45,120,.3)")}
+                        className={`rc-problem-row ${solved ? "rc-problem-row--solved" : "rc-problem-row--open"}`}
                       >
-                        <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"1rem",
-                          color: solved ? "#39ff14" : "#ff2d78",
-                          textShadow: solved ? "0 0 8px #39ff1488" : "0 0 8px #ff2d7888",
-                          width:20, flexShrink:0 }}>
+                        <span className="rc-problem-letter" style={{ color: solved ? "#39ff14" : "#ff2d78" }}>
                           {String.fromCharCode(65 + i)}
                         </span>
-                        <span style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:".9rem",
-                          fontWeight:600, flex:1,
-                          color: solved ? "rgba(57,255,20,.8)" : "rgba(255,255,255,.7)" }}>
+                        <span className="rc-problem-title" style={{ color: solved ? "rgba(57,255,20,.85)" : "rgba(255,255,255,.78)" }}>
                           {p.title}
                         </span>
-                        <span style={{ fontFamily:"'Share Tech Mono',monospace", fontSize:".42rem",
-                          padding:"2px 7px", border:"1px solid",
-                          color: p.difficulty==="easy"?"#39ff14":p.difficulty==="medium"?"#ffb800":"#ff2d78",
-                          borderColor: p.difficulty==="easy"?"rgba(57,255,20,.3)":p.difficulty==="medium"?"rgba(255,184,0,.3)":"rgba(255,45,120,.3)",
-                          background: p.difficulty==="easy"?"rgba(57,255,20,.06)":p.difficulty==="medium"?"rgba(255,184,0,.06)":"rgba(255,45,120,.06)",
-                        }}>
-                          {p.difficulty?.toUpperCase()}
+                        <span className="rc-pts-badge">{p.points ?? "?"} pts</span>
+                        <span className="rc-problem-arrow" style={{ color: solved ? "#39ff14" : "rgba(255,45,120,.35)" }}>
+                          {solved ? "✓" : "→"}
                         </span>
-                        {solved
-                          ? <span style={{ color:"#39ff14", fontSize:".7rem" }}>✓</span>
-                          : <span style={{ color:"rgba(255,45,120,.3)", fontSize:".7rem" }}>→</span>}
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
-
-                {/* end contest early — host only */}
                 {isHost && (
-                  <div style={{ padding:".8rem 1.2rem", borderTop:"1px solid rgba(255,45,120,.1)" }}>
-                    <button
-                      onClick={handleEnd}
-                      style={{ fontFamily:"'Share Tech Mono',monospace", fontSize:".5rem",
-                        letterSpacing:".15em", textTransform:"uppercase",
-                        padding:"6px 14px", background:"rgba(255,68,68,.08)",
-                        border:"1px solid rgba(255,68,68,.3)", color:"#ff4444", cursor:"pointer" }}>
-                      ☠ END CONTEST EARLY
-                    </button>
+                  <div className="px-4 py-3 border-t" style={{ borderColor: "rgba(255,45,120,.1)" }}>
+                    <button onClick={handleEnd} className="rc-danger-btn">☠ END CONTEST EARLY</button>
                   </div>
                 )}
               </div>
             )}
 
-            {/* contest ended */}
+            {/* ENDED */}
             {contest?.status === "ended" && (
-              <div style={{ background:"rgba(255,215,0,.03)", border:"1px solid rgba(255,215,0,.15)",
-                borderTop:"2px solid #ffd700", padding:"1.4rem", textAlign:"center" }}>
-                <div style={{ fontSize:"1.8rem", marginBottom:".5rem" }}>🏆</div>
-                <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"1.2rem",
-                  letterSpacing:".1em", color:"#ffd700", textShadow:"0 0 14px #ffd70088",
-                  marginBottom:".8rem" }}>
-                  CONTEST ENDED
-                </div>
-                <button className="br-start-btn"
-                  style={{ background:"rgba(255,215,0,.08)", borderColor:"rgba(255,215,0,.3)",
-                    borderTopColor:"#ffd700", color:"#ffd700", maxWidth:240, margin:"0 auto" }}
-                  onClick={() => navigate(`/room/${roomId}/contest/leaderboard`)}>
+              <div className="rc-panel rc-panel--gold flex flex-col items-center gap-4 py-10 px-6 text-center">
+                <span className="rc-trophy">🏆</span>
+                <h3 className="rc-ended-title">CONTEST ENDED</h3>
+                <button
+                  onClick={() => navigate(`/room/${roomId}/contest/leaderboard`)}
+                  className="rc-create-btn rc-create-btn--gold"
+                >
                   VIEW FINAL LEADERBOARD →
                 </button>
               </div>
             )}
-
           </div>
 
-          {/* ── RIGHT: LIVE SCOREBOARD + FEED ── */}
-          <div style={{ display:"flex", flexDirection:"column", gap:"1rem" }}>
+          {/* ── RIGHT: scoreboard + feed ── */}
+          <div className="flex flex-col gap-4">
 
-            {/* live scoreboard */}
-            <div style={{ background:"#0d0520", border:"1px solid rgba(255,45,120,.12)",
-              borderTop:"2px solid #ff2d78" }}>
-              <div style={{ padding:".7rem 1rem", borderBottom:"1px solid rgba(255,45,120,.1)",
-                background:"rgba(255,45,120,.04)", fontFamily:"'Share Tech Mono',monospace",
-                fontSize:".5rem", letterSpacing:".22em", color:"rgba(255,45,120,.6)",
-                display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+            {/* scoreboard */}
+            <div className="rc-panel">
+              <div className="rc-panel-hdr flex items-center justify-between">
                 <span>LIVE SCORES</span>
                 {contest?.status === "active" && (
-                  <span style={{ display:"flex", alignItems:"center", gap:5, color:"#39ff14" }}>
-                    <span style={{ width:6, height:6, borderRadius:"50%", background:"#39ff14",
-                      boxShadow:"0 0 5px #39ff14", display:"inline-block",
-                      animation:"pulse 1.5s ease-in-out infinite" }} />
+                  <span className="rc-live-badge">
+                    <span className="rc-live-dot" />
                     LIVE
                   </span>
                 )}
               </div>
 
               {sortedScores.length === 0 ? (
-                <div style={{ padding:"1.2rem", textAlign:"center",
-                  fontFamily:"'Share Tech Mono',monospace", fontSize:".5rem",
-                  color:"rgba(255,255,255,.15)", letterSpacing:".1em" }}>
-                  // No scores yet
-                </div>
-              ) : (
-                <div>
-                  {sortedScores.map((s, i) => {
-                    const isMe = s.userId?.toString() === myId;
-                    const glow = i===0?"#ffd700":i===1?"#c0c0c0":i===2?"#cd7f32":null;
-                    return (
-                      <div key={i} style={{
-                        display:"grid", gridTemplateColumns:"36px 1fr 50px 55px",
-                        padding:".65rem 1rem", borderBottom:"1px solid rgba(255,45,120,.05)",
-                        borderLeft: isMe ? "2px solid #ff2d78" : "2px solid transparent",
-                        background: isMe ? "rgba(255,45,120,.04)" : "transparent",
-                        transition:"background .2s",
-                      }}>
-                        <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:".95rem",
-                          color: glow || "rgba(255,255,255,.2)",
-                          textShadow: glow ? `0 0 8px ${glow}88` : "none", lineHeight:1 }}>
-                          {i + 1}
-                        </span>
-                        <span style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:".85rem",
-                          fontWeight:600, color: isMe ? "#ff2d78" : "rgba(255,255,255,.7)" }}>
-                          {s.username}
-                          {isMe && <span style={{ fontFamily:"'Share Tech Mono',monospace",
-                            fontSize:".38rem", color:"rgba(255,45,120,.45)", marginLeft:4 }}>
-                            (YOU)
-                          </span>}
-                        </span>
-                        <span style={{ fontFamily:"'Share Tech Mono',monospace", fontSize:".52rem",
-                          color:"#00f5ff", textAlign:"center" }}>
-                          {s.solved}/{contest?.problems?.length || 0}
-                        </span>
-                        <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"1rem",
-                          color: glow || "#ff2d78",
-                          textShadow: glow ? `0 0 8px ${glow}88` : "0 0 8px #ff2d7844",
-                          textAlign:"right", lineHeight:1 }}>
-                          {s.score}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+                <div className="rc-score-empty">// no scores yet</div>
+              ) : sortedScores.map((s, i) => {
+                const isMe  = s.userId?.toString() === myId;
+                const medal = i===0?"#ffd700":i===1?"#c0c0c0":i===2?"#cd7f32":null;
+                return (
+                  <div key={i} className={`rc-score-row ${isMe ? "rc-score-row--me" : ""}`}>
+                    <span className="rc-score-rank" style={{ color: medal || "rgba(255,255,255,.2)" }}>{i + 1}</span>
+                    <span className="rc-score-name" style={{ color: isMe ? "#ff2d78" : medal || "rgba(255,255,255,.72)" }}>
+                      {s.username}
+                      {isMe && <span className="rc-score-you">YOU</span>}
+                    </span>
+                    <span className="rc-score-solved">{s.solved}/{contest?.problems?.length || 0}</span>
+                    <span className="rc-score-pts" style={{ color: medal || "#ff2d78" }}>{s.score}</span>
+                  </div>
+                );
+              })}
             </div>
 
             {/* live feed */}
             {feed.length > 0 && (
-              <div style={{ background:"#0d0520", border:"1px solid rgba(0,245,255,.1)" }}>
-                <div style={{ padding:".6rem 1rem", borderBottom:"1px solid rgba(0,245,255,.08)",
-                  fontFamily:"'Share Tech Mono',monospace", fontSize:".48rem",
-                  letterSpacing:".2em", color:"rgba(0,245,255,.45)" }}>
-                  LIVE FEED
-                </div>
-                <div style={{ padding:".5rem", display:"flex", flexDirection:"column", gap:3 }}>
+              <div className="rc-panel rc-panel--feed">
+                <div className="rc-panel-hdr rc-panel-hdr--feed">LIVE FEED</div>
+                <div className="flex flex-col gap-1 p-2">
                   {feed.map((f, i) => (
-                    <div key={i} style={{
-                      fontFamily:"'Share Tech Mono',monospace", fontSize:".48rem",
-                      letterSpacing:".06em", color:"rgba(0,245,255,.55)",
-                      padding:"4px 8px", borderLeft:"2px solid rgba(0,245,255,.3)",
-                      background:"rgba(0,245,255,.03)", animation:"fadeUp .3s ease both",
-                    }}>
-                      {f.msg}
-                    </div>
+                    <div key={i} className="rc-feed-item">{f.msg}</div>
                   ))}
                 </div>
               </div>

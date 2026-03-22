@@ -133,9 +133,6 @@ export default function Rooms() {
               ROOMS
             </span>
           </h1>
-          <p style={{ fontFamily:"'Share Tech Mono',monospace", fontSize:".65rem", letterSpacing:".12em", color:"rgba(255,255,255,.25)", marginTop:".5rem" }}>
-            // CREATE A ROOM OR JOIN WITH AN ID
-          </p>
         </div>
 
         {/* user chip */}
