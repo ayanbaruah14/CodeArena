@@ -150,10 +150,41 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route path="/room/:roomId/contest"  element={<RoomContest />} />
-<Route path="/room/:roomId/contest/leaderboard" element={<RoomLeaderboard />} />
-      <Route path="/rooms" element={<Rooms />} />
-<Route path="/room/:roomId" element={<Room />} />
+ <Route
+    path="/rooms"
+    element={
+      <ProtectedRoute>
+        <Rooms />
+      </ProtectedRoute>
+    }
+  />
+
+  <Route
+    path="/room/:roomId"
+    element={
+      <ProtectedRoute>
+        <Room />
+      </ProtectedRoute>
+    }
+  />
+
+  <Route
+    path="/room/:roomId/contest"
+    element={
+      <ProtectedRoute>
+        <RoomContest />
+      </ProtectedRoute>
+    }
+  />
+
+  <Route
+    path="/room/:roomId/contest/leaderboard"
+    element={
+      <ProtectedRoute>
+        <RoomLeaderboard />
+      </ProtectedRoute>
+    }
+  />
       </Routes>
 
     </BrowserRouter>
