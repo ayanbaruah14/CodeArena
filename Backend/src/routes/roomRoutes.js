@@ -1,5 +1,5 @@
 import express from "express";
-import auth from "../middleware/auth.js";
+import authMiddleware from "../middleware/authMiddleware.js";
 import { getRoomContest, getRoomLeaderboard } from "../controllers/roomContestController.js";
 
 const router = express.Router();
@@ -15,7 +15,7 @@ router.get("/validate/:roomId", async (req, res) => {
 });
 
 /* contest routes */
-router.get("/:roomId/contest",             auth, getRoomContest);
-router.get("/:roomId/contest/leaderboard", auth, getRoomLeaderboard);
+router.get("/:roomId/contest",             authMiddleware, getRoomContest);
+router.get("/:roomId/contest/leaderboard", authMiddleware, getRoomLeaderboard);
 
 export default router;

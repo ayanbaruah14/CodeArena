@@ -9,7 +9,7 @@ import submissionRoutes from "./src/routes/submissionRoutes.js";
 import problemRoutes from "./src/routes/problemRoutes.js";
 import userRoutes from "./src/routes/userRoutes.js";
 import rateLimit from "express-rate-limit";
-
+import roomRoutes from "./src/routes/roomRoutes.js"
 // 🔥 NEW IMPORTS
 import http from "http";
 import { Server } from "socket.io";
@@ -47,6 +47,7 @@ app.use("/api/contests", contestRoutes);
 app.use("/api/submissions", submissionRoutes);
 app.use("/api/problems", problemRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/rooms", roomRoutes);
 
 
 

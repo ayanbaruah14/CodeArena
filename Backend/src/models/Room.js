@@ -37,7 +37,7 @@ const RoomSchema = new mongoose.Schema({
       userId:   { type: mongoose.Schema.Types.ObjectId, ref: "User" },
       username: String,
       message:  String,
-      system:   { type: Boolean, default: false }, // true for join/leave/contest alerts
+      system:   { type: Boolean, default: false },
       sentAt:   { type: Date, default: Date.now },
     }
   ],
@@ -47,7 +47,11 @@ const RoomSchema = new mongoose.Schema({
     active:       { type: Boolean, default: false },
     status:       { type: String, enum: ["none","waiting","active","ended"], default: "none" },
     problems:     [{ type: mongoose.Schema.Types.ObjectId, ref: "Problem" }],
-    difficulty:   { type: String, enum: ["easy","medium","hard","mixed"], default: "mixed" },
+
+    // ── REPLACED: difficulty → points range ──
+    minPoints:    { type: Number, default: 800  },
+    maxPoints:    { type: Number, default: 1600 },
+
     problemCount: { type: Number, default: 5 },
     startTime:    Date,
     endTime:      Date,

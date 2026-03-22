@@ -295,6 +295,20 @@ export default function Room() {
               </span>
             </div>
 
+            {/* add this below the BATTLE CHAT header */}
+<button
+  onClick={() => navigate(`/room/${roomId}/contest`)}
+  className="ml-auto flex items-center gap-1.5 px-3 py-1 transition-all duration-200"
+  style={{ fontFamily:"'Share Tech Mono',monospace", fontSize:".48rem",
+    letterSpacing:".14em", textTransform:"uppercase",
+    color:"#ffb800", border:"1px solid rgba(255,184,0,.3)",
+    background:"rgba(255,184,0,.06)" }}
+  onMouseEnter={e => e.currentTarget.style.boxShadow="0 0 12px rgba(255,184,0,.2)"}
+  onMouseLeave={e => e.currentTarget.style.boxShadow="none"}
+>
+  ⚡ CONTEST
+</button>
+
             {/* messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-2 min-h-0"
               style={{ scrollbarWidth:"thin", scrollbarColor:"rgba(255,45,120,.3) transparent" }}>

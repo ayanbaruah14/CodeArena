@@ -19,6 +19,8 @@ import AllProblems from "./Pages/student/AllProblems";
 import GlobalLeaderboard from "./Pages/student/GlobalLeaderboard";
 import Room from "./Pages/Room";
 import Rooms from "./Pages/Rooms";
+import RoomContest      from "./Pages/RoomContest";
+import RoomLeaderboard  from "./Pages/RoomLeaderboard";
 function App() {
 
   return (
@@ -148,6 +150,8 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route path="/room/:roomId/contest"  element={<RoomContest />} />
+<Route path="/room/:roomId/contest/leaderboard" element={<RoomLeaderboard />} />
       <Route path="/rooms" element={<Rooms />} />
 <Route path="/room/:roomId" element={<Room />} />
       </Routes>
