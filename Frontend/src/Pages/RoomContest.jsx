@@ -130,10 +130,6 @@ export default function RoomContest() {
       </div>
     </div>
   );
-
-  /* ══════════════════════════════════════════════════
-     HOST — CREATE CONTEST  (full dedicated page)
-  ══════════════════════════════════════════════════ */
   if (isHost && contest?.status === "none") return (
     <div className="rc-page">
       <div className="nt-scanlines" /><div className="nt-vignette" /><div className="nt-city" />
