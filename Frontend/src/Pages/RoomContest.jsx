@@ -156,136 +156,170 @@ export default function RoomContest() {
         <div className="nt-divider" />
 
         {/* form card */}
-        <div className="rc-form-card">
+<div className="bg-cyan-500/5 border border-cyan-500/10 backdrop-blur-md"
+  style={{ clipPath: "polygon(12px 0%,100% 0%,100% calc(100% - 12px),calc(100% - 12px) 100%,0% 100%,0% 12px)" }}>
 
-          {/* ── QUICK PRESETS ── */}
-          <div className="rc-form-section">
-            <div className="nt-section-label">QUICK PRESETS</div>
-            <div className="rc-presets-grid">
-              {PRESETS.map(p => {
-                const on = minPoints === p.min && maxPoints === p.max;
-                return (
-                  <button
-                    key={p.label}
-                    onClick={() => { setMinPoints(p.min); setMaxPoints(p.max); }}
-                    className={`rc-preset-btn ${on ? "rc-preset-btn--on" : ""}`}
-                    style={on ? { "--pc": p.color } : {}}
-                  >
-                    <span className="rc-preset-dot" style={{ background: p.color, boxShadow: `0 0 6px ${p.color}` }} />
-                    <span className="rc-preset-label">{p.label}</span>
-                    <span className="rc-preset-range">{p.min}–{p.max}</span>
-                  </button>
-                );
-              })}
+  {/* ── QUICK PRESETS ── */}
+  <div className="p-6 flex flex-col gap-4">
+    <div className="flex items-center gap-3">
+      <span className="font-mono text-xs text-cyan-400/60">◈</span>
+      <span className="font-mono text-xs tracking-widest text-white/30">QUICK PRESETS</span>
+      <div className="flex-1 h-px bg-cyan-500/10" />
+    </div>
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      {PRESETS.map(p => {
+        const on = minPoints === p.min && maxPoints === p.max;
+        return (
+          <button
+            key={p.label}
+            onClick={() => { setMinPoints(p.min); setMaxPoints(p.max); }}
+            className={`flex flex-col gap-1.5 px-3 py-3 text-left transition-all duration-150 border
+              ${on ? "bg-black/50" : "bg-black/30 border-white/10 hover:border-white/20 hover:bg-white/5"}`}
+            style={{ borderColor: on ? p.color + "55" : undefined }}
+          >
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 flex-shrink-0"
+                style={{ background: p.color, boxShadow: on ? `0 0 8px ${p.color}` : "none" }} />
+              <span className="font-mono text-xs tracking-widest"
+                style={{ color: on ? p.color : "rgba(255,255,255,.4)" }}>{p.label}</span>
             </div>
-          </div>
+            <span className="font-mono text-xs"
+              style={{ color: on ? "rgba(255,255,255,.7)" : "rgba(255,255,255,.2)" }}>{p.min}–{p.max}</span>
+          </button>
+        );
+      })}
+    </div>
+  </div>
 
-          <div className="nt-divider rc-inner-divider" />
+  <div className="mx-6 h-px bg-gradient-to-r from-cyan-400/40 to-transparent" />
 
-          {/* ── POINTS RANGE ── */}
-          <div className="rc-form-section">
-            <div className="nt-section-label">POINTS RANGE</div>
+  {/* ── POINTS RANGE ── */}
+  <div className="p-6 flex flex-col gap-5">
+    <div className="flex items-center gap-3">
+      <span className="font-mono text-xs text-cyan-400/60">◈</span>
+      <span className="font-mono text-xs tracking-widest text-white/30">POINTS RANGE</span>
+      <div className="flex-1 h-px bg-cyan-500/10" />
+    </div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
 
-            <div className="rc-sliders-row">
-              {/* min */}
-              <div className="rc-slider-field">
-                <div className="rc-slider-header">
-                  <span className="rc-slider-label">MIN POINTS</span>
-                  <span className="rc-slider-val" style={{ color: "#39ff14" }}>{minPoints}</span>
-                </div>
-                <input type="range" min="0" max="4800" step="100" value={minPoints}
-                  onChange={e => setMinPoints(Number(e.target.value))}
-                  className="rc-range-input rc-range-green" />
-                <div className="rc-range-hints"><span>0</span><span>2400</span><span>4800</span></div>
-              </div>
+      {/* min */}
+      <div className="flex flex-col gap-3 p-4 border border-white/5 bg-black/20">
+        <div className="flex items-baseline justify-between">
+          <span className="font-mono text-xs tracking-widest text-white/30">MIN POINTS</span>
+          <span className="font-mono text-lg font-bold text-green-400">{minPoints}</span>
+        </div>
+        <input type="range" min="0" max="4800" step="100" value={minPoints}
+          onChange={e => setMinPoints(Number(e.target.value))}
+          className="w-full cursor-pointer accent-green-400 h-1" />
+        <div className="flex justify-between font-mono text-white/20" style={{ fontSize: "0.55rem" }}>
+          <span>0</span><span>2400</span><span>4800</span>
+        </div>
+      </div>
 
-              {/* max */}
-              <div className="rc-slider-field">
-                <div className="rc-slider-header">
-                  <span className="rc-slider-label">MAX POINTS</span>
-                  <span className="rc-slider-val" style={{ color: "#ff2d78" }}>{maxPoints}</span>
-                </div>
-                <input type="range" min="200" max="5000" step="100" value={maxPoints}
-                  onChange={e => setMaxPoints(Number(e.target.value))}
-                  className="rc-range-input rc-range-pink" />
-                <div className="rc-range-hints"><span>200</span><span>2500</span><span>5000</span></div>
-              </div>
-            </div>
+      {/* max */}
+      <div className="flex flex-col gap-3 p-4 border border-white/5 bg-black/20">
+        <div className="flex items-baseline justify-between">
+          <span className="font-mono text-xs tracking-widest text-white/30">MAX POINTS</span>
+          <span className="font-mono text-lg font-bold text-pink-500">{maxPoints}</span>
+        </div>
+        <input type="range" min="200" max="5000" step="100" value={maxPoints}
+          onChange={e => setMaxPoints(Number(e.target.value))}
+          className="w-full cursor-pointer accent-pink-500 h-1" />
+        <div className="flex justify-between font-mono text-white/20" style={{ fontSize: "0.55rem" }}>
+          <span>200</span><span>2500</span><span>5000</span>
+        </div>
+      </div>
+    </div>
 
-            {/* visual range bar */}
-            <div className="rc-range-bar-wrap">
-              <span className="rc-range-bar-label">RANGE</span>
-              <span className="rc-range-bar-lo">{minPoints}</span>
-              <div className="rc-range-bar-track">
-                <div className="rc-range-bar-fill" style={{
-                  left:  `${(minPoints / 5000) * 100}%`,
-                  right: `${100 - (maxPoints / 5000) * 100}%`,
-                  background: rangeValid ? "linear-gradient(90deg,#39ff14,#ff2d78)" : "#ff4444",
-                }} />
-              </div>
-              <span className="rc-range-bar-hi">{maxPoints}</span>
-              <span className="rc-range-bar-unit">PTS</span>
-              {!rangeValid && <span className="rc-range-bar-warn">⚠ INVALID</span>}
-            </div>
-          </div>
+    {/* visual range bar */}
+    <div className="flex items-center gap-3 px-4 py-3 border border-white/5 bg-black/20">
+      <span className="font-mono text-white/25 tracking-widest shrink-0" style={{ fontSize: "0.55rem" }}>RANGE</span>
+      <span className="font-mono text-xs text-green-400 shrink-0">{minPoints}</span>
+      <div className="flex-1 relative h-px bg-white/10">
+        <div className="absolute top-0 bottom-0 transition-all duration-200"
+          style={{
+            left: `${(minPoints / 5000) * 100}%`,
+            right: `${100 - (maxPoints / 5000) * 100}%`,
+            background: rangeValid ? "linear-gradient(90deg,#39ff14,#ff2d78)" : "#ff4444",
+            boxShadow: rangeValid ? "0 0 4px #00f5ff66" : "0 0 4px #ff444466",
+          }} />
+      </div>
+      <span className="font-mono text-xs text-pink-500 shrink-0">{maxPoints}</span>
+      <span className="font-mono text-white/20 shrink-0" style={{ fontSize: "0.55rem" }}>PTS</span>
+      {!rangeValid && <span className="font-mono text-xs text-red-400 tracking-widest shrink-0">⚠ INVALID</span>}
+    </div>
+  </div>
 
-          <div className="nt-divider rc-inner-divider" />
+  <div className="mx-6 h-px bg-gradient-to-r from-cyan-400/40 to-transparent" />
 
-          {/* ── PROBLEMS + DURATION ── */}
-          <div className="rc-form-section">
-            <div className="nt-section-label">CONTEST SETTINGS</div>
-            <div className="rc-sliders-row">
-              <div className="rc-slider-field">
-                <div className="rc-slider-header">
-                  <span className="rc-slider-label">NUMBER OF PROBLEMS</span>
-                  <span className="rc-slider-val" style={{ color: "#00f5ff" }}>{problemCount}</span>
-                </div>
-                <input type="range" min="1" max="20" value={problemCount}
-                  onChange={e => setProblemCount(Number(e.target.value))}
-                  className="rc-range-input rc-range-cyan" />
-                <div className="rc-range-hints"><span>1</span><span>10</span><span>20</span></div>
-              </div>
+  {/* ── PROBLEMS + DURATION ── */}
+  <div className="p-6 flex flex-col gap-5">
+    <div className="flex items-center gap-3">
+      <span className="font-mono text-xs text-cyan-400/60">◈</span>
+      <span className="font-mono text-xs tracking-widest text-white/30">CONTEST SETTINGS</span>
+      <div className="flex-1 h-px bg-cyan-500/10" />
+    </div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
 
-              <div className="rc-slider-field">
-                <div className="rc-slider-header">
-                  <span className="rc-slider-label">TIME LIMIT</span>
-                  <span className="rc-slider-val" style={{ color: "#ffb800" }}>{duration} min</span>
-                </div>
-                <input type="range" min="5" max="180" step="5" value={duration}
-                  onChange={e => setDuration(Number(e.target.value))}
-                  className="rc-range-input rc-range-amber" />
-                <div className="rc-range-hints"><span>5m</span><span>1.5hr</span><span>3hr</span></div>
-              </div>
-            </div>
-          </div>
+      {/* problems */}
+      <div className="flex flex-col gap-3 p-4 border border-white/5 bg-black/20">
+        <div className="flex items-baseline justify-between">
+          <span className="font-mono text-xs tracking-widest text-white/30">PROBLEMS</span>
+          <span className="font-mono text-lg font-bold text-cyan-400">{problemCount}</span>
+        </div>
+        <input type="range" min="1" max="20" value={problemCount}
+          onChange={e => setProblemCount(Number(e.target.value))}
+          className="w-full cursor-pointer accent-cyan-400 h-1" />
+        <div className="flex justify-between font-mono text-white/20" style={{ fontSize: "0.55rem" }}>
+          <span>1</span><span>10</span><span>20</span>
+        </div>
+      </div>
 
-          <div className="nt-divider rc-inner-divider" />
+      {/* duration */}
+      <div className="flex flex-col gap-3 p-4 border border-white/5 bg-black/20">
+        <div className="flex items-baseline justify-between">
+          <span className="font-mono text-xs tracking-widest text-white/30">TIME LIMIT</span>
+          <span className="font-mono text-lg font-bold text-amber-400">{duration} <span className="text-sm font-normal">min</span></span>
+        </div>
+        <input type="range" min="5" max="180" step="5" value={duration}
+          onChange={e => setDuration(Number(e.target.value))}
+          className="w-full cursor-pointer accent-amber-400 h-1" />
+        <div className="flex justify-between font-mono text-white/20" style={{ fontSize: "0.55rem" }}>
+          <span>5m</span><span>1.5hr</span><span>3hr</span>
+        </div>
+      </div>
+    </div>
+  </div>
 
-          {/* ── SUMMARY ── */}
-          <div className="rc-summary-box">
-            <div className="rc-summary-row">
-              <span className="rc-summary-icon" style={{ color: "#00f5ff" }}>◈</span>
-              <span className="rc-summary-text">
-                <b style={{ color: "#00f5ff" }}>{problemCount}</b> problems &nbsp;·&nbsp;
-                range <b style={{ color: "#39ff14" }}>{minPoints}</b>–<b style={{ color: "#ff2d78" }}>{maxPoints}</b> pts
-                &nbsp;·&nbsp; <b style={{ color: "#ffb800" }}>{duration}</b> min
-              </span>
-              {activePreset && (
-                <span className="rc-summary-preset" style={{ color: activePreset.color, borderColor: activePreset.color + "44" }}>
-                  {activePreset.label}
-                </span>
-              )}
-            </div>
-            <div className="rc-summary-hint">// problems randomly selected from your problem bank</div>
-          </div>
+  <div className="mx-6 h-px bg-gradient-to-r from-cyan-400/40 to-transparent" />
 
-          {/* error */}
-          {setupError && (
-            <div className="rc-error-box">
-              <span>⚠</span>
-              <span>{setupError}</span>
-            </div>
-          )}
+  {/* ── SUMMARY ── */}
+  <div className="px-6 py-4 flex flex-col gap-1.5">
+    <div className="flex items-center gap-3 flex-wrap">
+      <span className="text-cyan-400 text-sm">◈</span>
+      <span className="text-sm text-white/50 font-semibold">
+        <span className="text-cyan-400">{problemCount}</span> problems &nbsp;·&nbsp;
+        range <span className="text-green-400">{minPoints}</span>–<span className="text-pink-500">{maxPoints}</span> pts
+        &nbsp;·&nbsp; <span className="text-amber-400">{duration}</span> min
+      </span>
+      {activePreset && (
+        <span className="px-2 py-0.5 font-mono text-xs tracking-widest border"
+          style={{ color: activePreset.color, borderColor: activePreset.color + "44" }}>
+          {activePreset.label}
+        </span>
+      )}
+    </div>
+    <span className="font-mono text-white/20 tracking-widest" style={{ fontSize: "0.58rem" }}>
+      // problems randomly selected from your problem bank
+    </span>
+  </div>
+
+  {/* error */}
+  {setupError && (
+    <div className="mx-6 mb-2 px-4 py-3 flex items-center gap-3 border border-red-500/30 bg-red-500/5 font-mono text-xs text-red-400">
+      <span>⚠</span><span>{setupError}</span>
+    </div>
+  )}
 
           {/* CTA */}
           <button
