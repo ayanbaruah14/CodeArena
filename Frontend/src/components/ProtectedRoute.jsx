@@ -9,7 +9,7 @@ function ProtectedRoute({ children }) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        await API.get("/auth/me"); // cookie auto sent
+        await API.get("/auth/me"); 
         setIsAuth(true);
       } catch (err) {
         console.log(err);
@@ -22,13 +22,10 @@ function ProtectedRoute({ children }) {
     checkAuth();
   }, []);
 
-  // ⏳ While checking auth
   if (loading) return <div>Loading...</div>;
 
-  // ❌ Not authenticated
   if (!isAuth) return <Navigate to="/login" />;
 
-  // ✅ Authenticated
   return children;
 }
 

@@ -12,11 +12,11 @@ function Navbar() {
 
 const logout = async () => {
   try {
-    await API.post("/auth/logout"); // 🔥 clears cookies in backend
+    await API.post("/auth/logout"); 
     navigate("/login");
   } catch (err) {
     console.error("Logout failed:", err);
-    navigate("/login"); // fallback
+    navigate("/login"); 
   }
 };
 
@@ -26,7 +26,7 @@ const logout = async () => {
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     let raf;
-    const CHARS = "01ABCDEF<>{}[]#$@!=+~";   // ← no Japanese chars
+    const CHARS = "01ABCDEF<>{}[]#$@!=+~"; 
     const drops = Array.from({ length: 18 }, (_, i) => ({
       x: i * 22 + Math.random() * 10,
       y: Math.random() * -60,
@@ -57,7 +57,6 @@ const logout = async () => {
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  // ← PROBLEMS added here
   const links = [
     { name: "DASHBOARD",   path: "/dashboard",      icon: "⌂" },
     { name: "CONTESTS",    path: "/contests",        icon: "⚡" },
@@ -79,7 +78,7 @@ const logout = async () => {
 
       <div className="nt-navbar-inner">
 
-        {/* ── LOGO ── */}
+
         <div className="nt-navbar-logo" onClick={() => navigate("/dashboard")}>
           <div className="nt-logo-box">
             <span className="nt-logo-box-inner">CA</span>
@@ -93,7 +92,7 @@ const logout = async () => {
           <div className="nt-logo-tag">v2.4</div>
         </div>
 
-        {/* ── NAV LINKS ── */}
+
         <div className="nt-navbar-links">
           {links.map(link => (
             <Link
@@ -108,7 +107,7 @@ const logout = async () => {
           ))}
         </div>
 
-        {/* ── RIGHT SIDE ── */}
+
         <div className="nt-navbar-right">
           <div className="nt-navbar-status">
             <span className="nt-s-dot nt-s-dot--green" style={{ width: 6, height: 6 }} />

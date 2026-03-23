@@ -95,7 +95,6 @@ const validate = (isGoogleAuth = false) => {
   if (!email)
     newErrors.email = "Email is required";
 
-  // ✅ Skip password check for Google login
   if (!isGoogleAuth) {
     if (!password)
       newErrors.password = "Password is required";
@@ -141,7 +140,6 @@ toast.success("LOGIN SUCCESSFUL — WELCOME BACK");
       <div className="nt-vignette" />
       <div className="nt-city" />
 
-      {/* glow orbs — flipped sides vs register */}
       <div className="nt-auth-orb" style={{
         width: 380, height: 380, bottom: -100, left: -80,
         background: "rgba(0,245,255,0.09)", position: "fixed",
@@ -155,23 +153,23 @@ toast.success("LOGIN SUCCESSFUL — WELCOME BACK");
         animation: "orbFloat 7s ease-in-out infinite alternate", animationDelay: "2s"
       }} />
 
-      {/* card */}
+     
       <div className="nt-auth-card" style={{ zIndex: 10 }}>
 
-        {/* top bar — cyan for login */}
+       
         <div className="nt-auth-card-bar" style={{
           background: "linear-gradient(90deg,#00f5ff,#ff2d78,#00f5ff)",
           backgroundSize: "200% 100%",
           animation: "navLineScroll 3s linear infinite"
         }} />
 
-        {/* corner brackets — cyan */}
+        
         <div className="nt-bracket nt-bracket--tl"
           style={{ width: 20, height: 20, borderColor: "#00f5ff" }} />
         <div className="nt-bracket nt-bracket--br"
           style={{ width: 20, height: 20, borderColor: "#00f5ff" }} />
 
-        {/* header */}
+      
         <div className="nt-auth-header">
           <div className="nt-auth-logo">
             <div className="nt-logo-box" style={{
@@ -202,10 +200,10 @@ toast.success("LOGIN SUCCESSFUL — WELCOME BACK");
           <p className="nt-auth-sub">// AUTHENTICATE TO ACCESS THE ARENA</p>
         </div>
 
-        {/* form */}
+      
         <form onSubmit={handleSubmit} className="nt-auth-form">
 
-          {/* email */}
+          
           <div className="nt-auth-field">
             <label className="nt-auth-label" style={{ color: "rgba(0,245,255,0.55)" }}>
               <span className="nt-auth-label-icon"
@@ -228,7 +226,7 @@ toast.success("LOGIN SUCCESSFUL — WELCOME BACK");
             )}
           </div>
 
-          {/* password */}
+        
           <div className="nt-auth-field">
             <label className="nt-auth-label" style={{ color: "rgba(0,245,255,0.55)" }}>
               <span className="nt-auth-label-icon"
@@ -259,7 +257,6 @@ toast.success("LOGIN SUCCESSFUL — WELCOME BACK");
             )}
           </div>
 
-          {/* submit — cyan */}
           <button
             type="submit"
             disabled={loading}
@@ -285,7 +282,7 @@ toast.success("LOGIN SUCCESSFUL — WELCOME BACK");
             )}
           </button>
 
-{/* Google Auth */}
+
 <div className="nt-auth-divider">
   <span className="nt-auth-divider-line" />
   <span className="nt-auth-divider-text">OR</span>
@@ -294,7 +291,7 @@ toast.success("LOGIN SUCCESSFUL — WELCOME BACK");
 
 <div id="googleBtnLogin" className="nt-auth-google-wrap" />
 
-          {/* register link */}
+         
           <p className="nt-auth-footer">
             NO ACCOUNT?{" "}
             <Link to="/register" className="nt-auth-link">

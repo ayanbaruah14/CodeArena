@@ -100,7 +100,7 @@ const validate = (isGoogleAuth = false) => {
   else if (!/\S+@\S+\.\S+/.test(email))
     newErrors.email = "Invalid email format";
 
-  // ✅ Only validate password for normal signup
+
   if (!isGoogleAuth) {
     if (!password)
       newErrors.password = "Password is required";
@@ -180,7 +180,6 @@ const validate = (isGoogleAuth = false) => {
           <p className="nt-auth-sub">// REGISTER TO ENTER THE ARENA</p>
         </div>
 
-        {/* form */}
         <form onSubmit={handleSubmit} className="nt-auth-form">
           {fields.map(f => (
             <div key={f.id} className="nt-auth-field">
@@ -214,7 +213,6 @@ const validate = (isGoogleAuth = false) => {
             </div>
           ))}
 
-          {/* submit */}
           <button
             type="submit"
             disabled={loading}
@@ -234,7 +232,7 @@ const validate = (isGoogleAuth = false) => {
             )}
           </button>
 
-          {/* Google Auth */}
+
 <div className="nt-auth-divider">
   <span className="nt-auth-divider-line" />
   <span className="nt-auth-divider-text">OR</span>
@@ -243,7 +241,6 @@ const validate = (isGoogleAuth = false) => {
 
 <div id="googleBtnRegister" className="nt-auth-google-wrap" />
 
-          {/* login link */}
           <p className="nt-auth-footer">
             ALREADY REGISTERED?{" "}
             <Link to="/login" className="nt-auth-link">
