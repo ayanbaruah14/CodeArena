@@ -4,7 +4,7 @@ import { getRoomContest, getRoomLeaderboard } from "../controllers/roomContestCo
 
 const router = express.Router();
 
-/* existing validate route */
+
 router.get("/validate/:roomId", async (req, res) => {
   try {
     const room = await Room.findOne({ roomId: req.params.roomId });
@@ -14,7 +14,7 @@ router.get("/validate/:roomId", async (req, res) => {
   }
 });
 
-/* contest routes */
+
 router.get("/:roomId/contest",             authMiddleware, getRoomContest);
 router.get("/:roomId/contest/leaderboard", authMiddleware, getRoomLeaderboard);
 

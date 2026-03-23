@@ -24,14 +24,14 @@ const RoomSchema = new mongoose.Schema({
     }
   ],
 
-  // ── ROOM STATUS ──
+ 
   status: {
     type: String,
     enum: ["live", "ended"],
     default: "live"
   },
 
-  // ── MESSAGES ──
+
   messages: [
     {
       userId:   { type: mongoose.Schema.Types.ObjectId, ref: "User" },
@@ -42,13 +42,11 @@ const RoomSchema = new mongoose.Schema({
     }
   ],
 
-  // ── CONTEST ──
   contest: {
     active:       { type: Boolean, default: false },
     status:       { type: String, enum: ["none","waiting","active","ended"], default: "none" },
     problems:     [{ type: mongoose.Schema.Types.ObjectId, ref: "Problem" }],
 
-    // ── REPLACED: difficulty → points range ──
     minPoints:    { type: Number, default: 800  },
     maxPoints:    { type: Number, default: 1600 },
 

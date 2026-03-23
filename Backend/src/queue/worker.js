@@ -9,11 +9,11 @@ import Submission from "../models/Submission.js";
 
 dotenv.config();
 
-// MongoDB connection
+
 await mongoose.connect(process.env.MONGO_URI);
 console.log("Worker connected to MongoDB");
 
-// Redis connection
+
 const connection = new Redis({
   host: "127.0.0.1",
   port: 6379,
@@ -22,7 +22,7 @@ const connection = new Redis({
 
 console.log("Worker started and waiting for jobs...");
 
-// Language normalization map
+
 const languageMap = {
   "c++": "cpp",
   "cpp": "cpp",
@@ -94,7 +94,7 @@ const worker = new Worker(
         }
       }
 
-      // If all test cases passed
+
       submission.status = "Accepted";
       submission.executionTime = maxExecutionTime;
 
@@ -130,17 +130,17 @@ const worker = new Worker(
 
   },
   {  connection,
-    lockDuration: 120000,      // 2 minutes
+    lockDuration: 120000,      
     stalledInterval: 30000,
     maxStalledCount: 0 }
 );
 
-// Job completed event
+
 worker.on("completed", (job) => {
   console.log(`Job ${job.id} completed`);
 });
 
-// Job failed event
+
 worker.on("failed", (job, err) => {
   console.log(`Job ${job?.id} failed`, err);
 });

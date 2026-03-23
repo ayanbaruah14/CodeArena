@@ -8,13 +8,13 @@ import { getSubmissionById } from "../controllers/submissionController.js";
 import rateLimit from "express-rate-limit";
 const router = express.Router();
   const submissionLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 10, // max 10 submissions per minute
+  windowMs: 60 * 1000, 
+  max: 10, 
   message: {
     msg: "Too many submissions, slow down!"
   }
 });
-router.post("/",authMiddleware,submissionLimiter,submitCode);//CANNOT SUBMIT MORE THAN 10 TIMES IN A MINUTE
+router.post("/",authMiddleware,submissionLimiter,submitCode);
 
 router.get(
   "/user",

@@ -7,7 +7,7 @@ import adminMiddleware from "../middleware/adminMiddleware.js";
 
 const router = express.Router();
 
-router.post("/",authMiddleware,createProblem);//only admin can create problems
+router.post("/",authMiddleware,adminMiddleware,createProblem);
 
 router.get("/",getProblems);
 
