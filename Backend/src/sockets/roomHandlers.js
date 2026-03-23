@@ -4,7 +4,6 @@ import Problem from "../models/Problem.js";
 
 export default function roomHandlers(io, socket) {
 
-  // ================= CREATE ROOM =================
   socket.on("createRoom", async ({ userId, username }) => {
     try {
       const roomId = nanoid(6);
@@ -35,8 +34,6 @@ export default function roomHandlers(io, socket) {
   });
 
 
-
-  // ================= JOIN ROOM =================
   socket.on("joinRoom", async ({ roomId, userId, username }) => {
     try {
       const room = await Room.findOne({ roomId });
@@ -52,7 +49,6 @@ export default function roomHandlers(io, socket) {
       if (!exists) {
         room.users.push({ userId, username });
 
-        // add to contest scores if contest is waiting/active
         if (["waiting","active"].includes(room.contest.status)) {
           const inScores = room.contest.scores.find(s => s.userId.toString() === userId);
           if (!inScores) {
@@ -67,10 +63,8 @@ export default function roomHandlers(io, socket) {
 
       socket.join(roomId);
 
-      // send chat history to joining user
       socket.emit("messageHistory", room.messages);
 
-      // send contest state to joining user
       if (room.contest.status !== "none") {
         await room.populate("contest.problems", "title points");
         socket.emit("contestState", {
@@ -102,8 +96,6 @@ export default function roomHandlers(io, socket) {
   });
 
 
-
-  // ================= LEAVE ROOM =================
   socket.on("leaveRoom", async ({ roomId, userId }) => {
     try {
       const room = await Room.findOne({ roomId });
@@ -133,9 +125,6 @@ export default function roomHandlers(io, socket) {
     }
   });
 
-
-
-  // ================= END ROOM =================
   socket.on("endRoom", async ({ roomId, userId }) => {
     try {
       const room = await Room.findOne({ roomId });
@@ -165,9 +154,6 @@ export default function roomHandlers(io, socket) {
     }
   });
 
-
-
-  // ================= CHAT =================
   socket.on("sendMessage", async ({ roomId, message, userId, username }) => {
     try {
       await Room.findOneAndUpdate(
@@ -182,7 +168,6 @@ export default function roomHandlers(io, socket) {
 
 
 
-  // ================= TYPING =================
   socket.on("typing", ({ roomId, username }) => {
     socket.to(roomId).emit("userTyping", username);
   });
@@ -191,10 +176,6 @@ export default function roomHandlers(io, socket) {
     socket.to(roomId).emit("userStopTyping");
   });
 
-
-
-  // ================= SETUP CONTEST =================
-  // host picks a points range + duration before starting
   socket.on("setupContest", async ({ roomId, userId, minPoints, maxPoints, problemCount, duration }) => {
     try {
       const room = await Room.findOne({ roomId });
@@ -206,13 +187,12 @@ export default function roomHandlers(io, socket) {
       if (room.contest.status === "active")
         return socket.emit("roomError", "Contest already running");
 
-      // clamp + validate range
+
       const lo = Math.max(0,    Number(minPoints) || 800);
       const hi = Math.min(5000, Number(maxPoints) || 1600);
       if (lo >= hi)
         return socket.emit("roomError", "minPoints must be less than maxPoints");
 
-      // pick random problems within the points range
       const problems = await Problem.aggregate([
         { $match: { points: { $gte: lo, $lte: hi } } },
         { $sample: { size: Math.min(Number(problemCount) || 5, 20) } }
@@ -221,7 +201,7 @@ export default function roomHandlers(io, socket) {
       if (problems.length === 0)
         return socket.emit("roomError", `No problems found in the ${lo}–${hi} points range`);
 
-      // init scores for all current players
+    
       const scores = room.users.map(u => ({
         userId:         u.userId,
         username:       u.username,
@@ -265,8 +245,6 @@ export default function roomHandlers(io, socket) {
   });
 
 
-
-  // ================= START CONTEST =================
   socket.on("startContest", async ({ roomId, userId }) => {
     try {
       const room = await Room.findOne({ roomId });
@@ -301,7 +279,7 @@ export default function roomHandlers(io, socket) {
         message: "⚡ CONTEST STARTED — May the best coder win!",
       });
 
-      // auto-end when duration expires
+
       setTimeout(async () => {
         try {
           const r = await Room.findOne({ roomId });
@@ -333,10 +311,6 @@ export default function roomHandlers(io, socket) {
     }
   });
 
-
-
-  // ================= PROBLEM SOLVED IN CONTEST =================
-  // Emitted by the problem page when a submission comes back Accepted
   socket.on("contestProblemSolved", async ({ roomId, userId, problemId }) => {
     try {
       const room = await Room.findOne({ roomId });
@@ -344,7 +318,6 @@ export default function roomHandlers(io, socket) {
 
       if (room.contest.status !== "active") return;
 
-      // reject if time expired
       if (new Date() > new Date(room.contest.endTime)) {
         room.contest.status = "ended";
         room.contest.active = false;
@@ -356,14 +329,12 @@ export default function roomHandlers(io, socket) {
       const player = room.contest.scores.find(s => s.userId.toString() === userId);
       if (!player) return;
 
-      // prevent double-counting
       if (player.solvedProblems.map(id => id.toString()).includes(problemId)) return;
 
-      // look up the problem to get its points value
       const problem = await Problem.findById(problemId).select("title points");
       if (!problem) return;
 
-      // check the problem is actually in this contest
+
       const inContest = room.contest.problems.map(id => id.toString()).includes(problemId);
       if (!inContest) return;
 
@@ -396,8 +367,6 @@ export default function roomHandlers(io, socket) {
   });
 
 
-
-  // ================= END CONTEST MANUALLY =================
   socket.on("endContest", async ({ roomId, userId }) => {
     try {
       const room = await Room.findOne({ roomId });
@@ -430,8 +399,6 @@ export default function roomHandlers(io, socket) {
   });
 
 
-
-  // ================= GET CONTEST LEADERBOARD =================
   socket.on("getContestLeaderboard", async ({ roomId }) => {
     try {
       const room = await Room

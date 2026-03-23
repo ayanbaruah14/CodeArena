@@ -26,7 +26,6 @@ const runCode = (code, input, language, submissionId) => {
 
     const dir = `./temp/${submissionId}`;
 
-    // create submission directory
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
@@ -56,13 +55,12 @@ const runCode = (code, input, language, submissionId) => {
 
     exec(
       command,
-      { maxBuffer: 10 * 1024 * 1024 }, // allow large outputs
+      { maxBuffer: 10 * 1024 * 1024 }, 
       (err, stdout, stderr) => {
 
         const end = Date.now();
         const executionTime = (end - start) / 1000;
 
-        // check compilation errors
         if (fs.existsSync(compileErrorPath)) {
           const compileError = fs.readFileSync(compileErrorPath, "utf8");
 
@@ -73,8 +71,6 @@ const runCode = (code, input, language, submissionId) => {
         }
 
         if (err) {
-
-          // timeout error
           if (err.code === 124) {
             cleanTemp(dir);
             return reject("Time Limit Exceeded");
