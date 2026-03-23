@@ -2,7 +2,6 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import { OAuth2Client } from "google-auth-library";
-// 🔐 Generate tokens
 const generateAccessToken = (user) => {
   return jwt.sign(
     { id: user._id, role: user.role },
@@ -19,14 +18,10 @@ const generateRefreshToken = (user) => {
   );
 };
 
-
-
-// ================= REGISTER =================
 export const register = async (req, res) => {
   try {
     const { username, email, password } = req.body;
 
-    // validation
     if (!username || !email || !password) {
       return res.status(400).json({ msg: "All fields are required" });
     }
@@ -51,10 +46,6 @@ export const register = async (req, res) => {
     res.status(500).json({ msg: "Server error" });
   }
 };
-
-
-
-// =================NORMAL  LOGIN =================
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -71,19 +62,17 @@ if (!user.password) {
 
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
-
-    // 🍪 set cookies
     res.cookie("token", accessToken, {
       httpOnly: true,
-      secure: false, // change to true in production
-      sameSite: "lax",//change to none in prodution
+      secure: false, 
+      sameSite: "lax",
       maxAge: 15 * 60 * 1000
     });
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      secure: false, // change to true in production
-      sameSite: "lax",//change to none in prodution
+      secure: false, 
+      sameSite: "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
@@ -98,8 +87,6 @@ if (!user.password) {
   }
 };
 
-//==========LOGIN WITH GOOGLE==========
-
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 export const googleLogin = async (req, res) => {
@@ -109,8 +96,6 @@ export const googleLogin = async (req, res) => {
     if (!token) {
       return res.status(400).json({ msg: "Token missing" });
     }
-
-    // ✅ Verify Google token
     const ticket = await client.verifyIdToken({
       idToken: token,
       audience: process.env.GOOGLE_CLIENT_ID,
@@ -130,20 +115,17 @@ export const googleLogin = async (req, res) => {
       return res.status(400).json({ msg: "Email not verified" });
     }
 
-    // 🔥 FIND OR CREATE USER
     let user = await User.findOne({ email });
 
     if (!user) {
-      // create new user
       user = await User.create({
-        username: email.split("@")[0], // ✅ IMPORTANT (your schema needs username)
+        username: email.split("@")[0],
         email,
         googleId,
         avatar: picture,
         password: null
       });
     } else {
-      // attach googleId if not present
       if (!user.googleId) {
         user.googleId = googleId;
         user.avatar = picture || user.avatar;
@@ -153,8 +135,6 @@ export const googleLogin = async (req, res) => {
 
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
-
-    // 🍪 SET COOKIES (same as your login)
     res.cookie("token", accessToken, {
       httpOnly: true,
       secure: false,
@@ -181,8 +161,6 @@ export const googleLogin = async (req, res) => {
 };
 
 
-
-// ================= GET ME =================
 export const getMe = async (req, res) => {
   try {
     if (!req.user?.id) {
@@ -207,8 +185,6 @@ export const getMe = async (req, res) => {
 };
 
 
-
-// ================= REFRESH TOKEN =================
 export const refresh = (req, res) => {
   const token = req.cookies.refreshToken;
 
@@ -227,7 +203,7 @@ export const refresh = (req, res) => {
 
     res.cookie("token", newAccessToken, {
       httpOnly: true,
-      secure: false, // change in production
+      secure: false, 
       sameSite: "lax",
       maxAge: 15 * 60 * 1000
     });
@@ -239,9 +215,6 @@ export const refresh = (req, res) => {
   }
 };
 
-
-
-// ================= LOGOUT =================
 export const logout = (req, res) => {
   res.clearCookie("token");
   res.clearCookie("refreshToken");

@@ -58,7 +58,7 @@ export const getSubmissionById = async (req, res) => {
     if (!submission)
       return res.status(404).json({ msg: "Submission not found" });
 
-    // only owner can view their submission
+
     if (submission.user.toString() !== req.user.id)
       return res.status(403).json({ msg: "Access denied" });
 

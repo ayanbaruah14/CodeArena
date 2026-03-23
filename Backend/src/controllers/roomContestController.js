@@ -1,7 +1,6 @@
 import Room from "../models/Room.js";
 import Problem from "../models/Problem.js";
 
-/* GET /api/rooms/:roomId/contest */
 export const getRoomContest = async (req, res) => {
   try {
     const room = await Room
@@ -22,7 +21,6 @@ export const getRoomContest = async (req, res) => {
   }
 };
 
-/* GET /api/rooms/:roomId/contest/leaderboard */
 export const getRoomLeaderboard = async (req, res) => {
   try {
     const room = await Room

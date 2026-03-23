@@ -1,8 +1,6 @@
 import Contest from "../models/Contest.js";
 import Submission from "../models/Submission.js";
 
-/* ---------------- CREATE CONTEST ---------------- */
-
 export const createContest = async (req,res)=>{
 
   try{
@@ -19,8 +17,6 @@ export const createContest = async (req,res)=>{
 
 };
 
-
-/* ---------------- ADD PROBLEM ---------------- */
 
 export const addProblemToContest = async (req,res)=>{
 
@@ -49,8 +45,6 @@ export const addProblemToContest = async (req,res)=>{
 };
 
 
-/* ---------------- GET ALL CONTESTS ---------------- */
-
 export const getContests = async(req,res)=>{
 
   const contests = await Contest
@@ -64,8 +58,6 @@ export const getContests = async(req,res)=>{
 
 };
 
-
-/* ---------------- GET SINGLE CONTEST ---------------- */
 
 export const getContestById = async (req,res)=>{
 
@@ -92,8 +84,6 @@ export const getContestById = async (req,res)=>{
 
 };
 
-
-/* ---------------- LEADERBOARD ---------------- */
 
 export const getLeaderboard = async (req,res)=>{
 
@@ -127,8 +117,6 @@ export const getLeaderboard = async (req,res)=>{
       const userId = sub.user._id.toString();
       const problemId = sub.problem.toString();
 
-      /* Initialize user */
-
       if(!leaderboard[userId]){
 
         leaderboard[userId] = {
@@ -138,8 +126,6 @@ export const getLeaderboard = async (req,res)=>{
         };
 
       }
-
-      /* Initialize problem for user */
 
       if(!leaderboard[userId].problems[problemId]){
 
@@ -153,8 +139,6 @@ export const getLeaderboard = async (req,res)=>{
 
       const prob = leaderboard[userId].problems[problemId];
 
-      /* Ignore submissions after solve */
-
       if(prob.solved) return;
 
       if(sub.status === "Accepted"){
@@ -164,8 +148,6 @@ export const getLeaderboard = async (req,res)=>{
         const problem = contest.problems.find(
           p => p._id.toString() === problemId
         );
-
-        /* Safety check */
 
         if(!problem) return;
 
@@ -211,8 +193,6 @@ export const getLeaderboard = async (req,res)=>{
 
 };
 
-
-/* ---------------- UPDATE STATUS ---------------- */
 
 export const updateContestStatus = async(req,res)=>{
 

@@ -1,9 +1,7 @@
 import User from "../models/User.js";
 
-/* GET /api/users/:userId */
 export const getUserById = async (req, res) => {
   try {
-    // ✅ get id from JWT (set by authMiddleware)
     const user = await User.findById(req.user.id).select("-password");
 
     if (!user) {
@@ -20,7 +18,7 @@ export const getUserById = async (req, res) => {
   }
 };
 
-/* PATCH /api/users/rating */
+
 export const updateRating = async (req, res) => {
   try {
     const { userId, newRating, delta, contestId } = req.body;
@@ -30,7 +28,7 @@ export const updateRating = async (req, res) => {
 
     const user = await User.findByIdAndUpdate(
       userId,
-      { rating: Math.max(0, newRating) },  // never go below 0
+      { rating: Math.max(0, newRating) },  
       { new: true }
     ).select("-password");
 
@@ -48,7 +46,6 @@ export const updateRating = async (req, res) => {
   }
 };
 
-/* GET /api/users/leaderboard */
 export const getGlobalLeaderboard = async (req, res) => {
   try {
     const users = await User.find({}, "username rating")
