@@ -13,6 +13,7 @@ import roomRoutes from "./src/routes/roomRoutes.js"
 import http from "http";
 import { Server } from "socket.io";
 import roomHandlers from "./src/sockets/roomHandlers.js";
+import collabHandlers from "./src/sockets/collabHandlers.js";
 
 dotenv.config();
 
@@ -59,7 +60,8 @@ const rooms = {};
 io.on("connection", (socket) => {
   console.log("Socket connected:", socket.id);
 
-  roomHandlers(io, socket, rooms);
+    roomHandlers(io, socket, rooms);
+    collabHandlers(io, socket);
 
   socket.on("disconnect", () => {
     console.log("Socket disconnected:", socket.id);
