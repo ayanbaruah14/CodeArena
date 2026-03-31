@@ -18,12 +18,12 @@ export function userColor(str) {
   return COLORS[Math.abs(h) % COLORS.length];
 }
 
-// ── base64 helpers ────────────────────────────────────────
 function toBase64(u8) {
   let binary = "";
   for (let i = 0; i < u8.byteLength; i++) binary += String.fromCharCode(u8[i]);
   return btoa(binary);
 }
+
 function fromBase64(b64) {
   const binary = atob(b64);
   const u8 = new Uint8Array(binary.length);
@@ -31,19 +31,6 @@ function fromBase64(b64) {
   return u8;
 }
 
-// ─────────────────────────────────────────────────────────
-// CSS injection for y-monaco remote cursors
-//
-// y-monaco inserts DOM nodes with these class names:
-//   .yRemoteSelection-<clientID>         — selection highlight span
-//   .yRemoteSelectionHead-<clientID>     — cursor caret element
-//   .yRemoteSelectionHead-<clientID>::after — the floating name label
-//
-// Without injecting colour rules into the document, every cursor
-// is colourless / invisible even though the DOM nodes are there.
-// We maintain ONE <style id="yjs-cursor-styles"> tag and rewrite
-// it whenever the awareness map changes.
-// ─────────────────────────────────────────────────────────
 let _styleEl = null;
 
 function getStyleEl() {
@@ -58,7 +45,7 @@ function getStyleEl() {
 }
 
 function rebuildCursorCSS(awareness, myClientId) {
-  const states = awareness.getStates(); // Map<clientID, state>
+  const states = awareness.getStates();
   let css = "";
 
   states.forEach((state, clientId) => {
@@ -67,18 +54,14 @@ function rebuildCursorCSS(awareness, myClientId) {
 
     const { color, name = "?" } = state.user;
 
-    // CSS-safe name: escape backslashes and double-quotes for the
-    // content:"…" property.
     const safeLabel = name
       .replace(/\\/g, "\\\\")
       .replace(/"/g, '\\"')
-      .slice(0, 20); // cap length so long names don't blow out the UI
+      .slice(0, 20);
 
-    // 20 % opacity hex suffix for the selection background
     const selectionBg = color + "33";
 
     css += `
-/* peer ${clientId} — ${name} */
 .yRemoteSelection-${clientId} {
   background-color: ${selectionBg} !important;
   border-radius: 1px;
@@ -116,8 +99,6 @@ function rebuildCursorCSS(awareness, myClientId) {
   getStyleEl().textContent = css;
 }
 
-// ─────────────────────────────────────────────────────────
-
 export default function useCollab({ roomId, username, editorRef, editorReady }) {
   const ydocRef      = useRef(null);
   const awarenessRef = useRef(null);
@@ -126,13 +107,10 @@ export default function useCollab({ roomId, username, editorRef, editorReady }) 
 
   const [connected, setConnected] = useState(false);
   const [language,  setLanguage]  = useState("cpp");
-  // peers: clientID (number) → { username, color, typing }
-  const [peers, setPeers] = useState(new Map());
+  const [peers,     setPeers]     = useState(new Map());
 
-  // colour is stable for the lifetime of this session
   const color = useRef(userColor(username)).current;
 
-  // ── SETUP YJS + SOCKET ──────────────────────────────
   useEffect(() => {
     if (!roomId || !username) return;
 
@@ -144,7 +122,6 @@ export default function useCollab({ roomId, username, editorRef, editorReady }) 
     const awareness = new Awareness(ydoc);
     awarenessRef.current = awareness;
 
-    // y-monaco reads state.user.{ name, color } — shape must be exact
     awareness.setLocalState({
       user:   { name: username, color },
       typing: false,
@@ -153,12 +130,11 @@ export default function useCollab({ roomId, username, editorRef, editorReady }) 
     socket.emit("collab:join", { roomId, username, color });
     setConnected(true);
 
-    // ── single function: sync peer list + cursor CSS ───
     const syncPeers = () => {
       const states = awareness.getStates();
       const next = new Map();
       states.forEach((state, clientId) => {
-        if (clientId === ydoc.clientID) return; // skip self
+        if (clientId === ydoc.clientID) return;
         if (!state?.user) return;
         next.set(clientId, {
           username: state.user.name,
@@ -170,7 +146,6 @@ export default function useCollab({ roomId, username, editorRef, editorReady }) 
       rebuildCursorCSS(awareness, ydoc.clientID);
     };
 
-    // ── Socket handlers ────────────────────────────────
     const onSync = ({ update, language: lang }) => {
       if (destroyed.current) return;
       try { Y.applyUpdate(ydoc, fromBase64(update)); }
@@ -200,17 +175,12 @@ export default function useCollab({ roomId, username, editorRef, editorReady }) 
     socket.on("collab:awareness-update", onAwarenessUpdate);
     socket.on("collab:language",         onLanguage);
 
-    // ── Forward doc updates to server ─────────────────
     const sendUpdate = (update, origin) => {
       if (origin === "remote" || destroyed.current) return;
       socket.emit("collab:update", { roomId, update: toBase64(update) });
     };
     ydoc.on("update", sendUpdate);
 
-    // ── Forward our awareness changes to server ────────
-    // This fires whenever our cursor moves, selection changes, or
-    // typing state flips — everything a remote peer needs to draw
-    // our cursor correctly.
     const onAwarenessChange = ({ added, updated, removed }) => {
       if (destroyed.current) return;
       const changed = [...added, ...updated, ...removed];
@@ -220,11 +190,10 @@ export default function useCollab({ roomId, username, editorRef, editorReady }) 
       } catch (e) {
         console.error("[collab] awareness encode error:", e);
       }
-      syncPeers(); // keep our own peer list current too
+      syncPeers();
     };
     awareness.on("change", onAwarenessChange);
 
-    // ── Cleanup ────────────────────────────────────────
     return () => {
       destroyed.current = true;
 
@@ -237,14 +206,13 @@ export default function useCollab({ roomId, username, editorRef, editorReady }) 
       ydoc.off("update", sendUpdate);
       awareness.off("change", onAwarenessChange);
 
-      awareness.setLocalState(null); // marks us as offline to peers
+      awareness.setLocalState(null);
       awareness.destroy();
       ydoc.destroy();
 
       ydocRef.current      = null;
       awarenessRef.current = null;
 
-      // Remove injected cursor styles so they don't bleed into other pages
       if (_styleEl) _styleEl.textContent = "";
 
       setConnected(false);
@@ -252,8 +220,6 @@ export default function useCollab({ roomId, username, editorRef, editorReady }) 
     };
   }, [roomId, username]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── MONACO BINDING ──────────────────────────────────
-  // Runs once the editor is mounted AND ydoc exists.
   useEffect(() => {
     if (!editorReady || !editorRef.current || !ydocRef.current) return;
 
@@ -263,21 +229,14 @@ export default function useCollab({ roomId, username, editorRef, editorReady }) 
     const model     = editor.getModel();
     if (!model || !awareness) return;
 
-    // Clear model so Yjs is the sole source of truth for content
     model.setValue("");
 
-    const yText = ydoc.getText("code");
-
-    // Passing `awareness` as the 4th argument is what tells y-monaco
-    // to render remote cursors and selections in the editor.
+    const yText   = ydoc.getText("code");
     const binding = new MonacoBinding(yText, model, new Set([editor]), awareness);
     bindingRef.current = binding;
 
-    // Run an initial CSS pass — peers who joined before us are already
-    // in the awareness map and need their styles set immediately.
     rebuildCursorCSS(awareness, ydoc.clientID);
 
-    // ── Typing indicator ──────────────────────────────
     let typingTimer = null;
     const disposable = editor.onDidChangeModelContent(() => {
       const aw = awarenessRef.current;
@@ -297,7 +256,6 @@ export default function useCollab({ roomId, username, editorRef, editorReady }) 
     };
   }, [editorReady]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Language change ──────────────────────────────────
   const changeLanguage = useCallback((lang) => {
     socket.emit("collab:language", { roomId, language: lang });
     setLanguage(lang);

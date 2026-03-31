@@ -1,10 +1,9 @@
 import * as Y from "yjs";
 import CollabRoom from "../models/CollabRooms.js";
+import Problem    from "../models/Problem.js";
+import Room       from "../models/Room.js";
 
-// ── in-memory Yjs doc store: roomId → Y.Doc ──────────────
-const ydocs = new Map();
-
-// track which rooms each socket is in: socketId → Set<roomId>
+const ydocs      = new Map();
 const socketRooms = new Map();
 
 function getDoc(roomId) {
@@ -12,7 +11,6 @@ function getDoc(roomId) {
   return ydocs.get(roomId);
 }
 
-// debounced persist: roomId → timeoutId
 const saveTimers = new Map();
 function scheduleSave(roomId, ydoc) {
   if (saveTimers.has(roomId)) clearTimeout(saveTimers.get(roomId));
@@ -37,41 +35,45 @@ function scheduleSave(roomId, ydoc) {
 
 export default function collabHandlers(io, socket) {
 
-  // ── JOIN collab session ───────────────────────────────
   socket.on("collab:join", async ({ roomId, username, color }) => {
     socket.join(`collab:${roomId}`);
 
-    // track this socket → roomId mapping for disconnect cleanup
     if (!socketRooms.has(socket.id)) socketRooms.set(socket.id, new Set());
     socketRooms.get(socket.id).add(roomId);
 
-    const ydoc = getDoc(roomId);
-
-    // if doc is empty, try to load from MongoDB first, THEN sync
+    const ydoc    = getDoc(roomId);
     const isEmpty = !ydoc.getText("code").toString();
+
     if (isEmpty) {
       try {
         const saved = await CollabRoom.findOne({ roomId });
-        if (saved?.code) {
-          // Only insert if still empty (another join might have beaten us)
-          if (!ydoc.getText("code").toString()) {
-            ydoc.getText("code").insert(0, saved.code);
-            ydoc.getMap("meta").set("language", saved.language || "cpp");
-          }
+        if (saved?.code && !ydoc.getText("code").toString()) {
+          ydoc.getText("code").insert(0, saved.code);
+          ydoc.getMap("meta").set("language", saved.language || "cpp");
         }
       } catch (err) {
         console.error("[collab] load error:", err.message);
       }
     }
 
-    // send full current state to the new joiner (after any DB load)
     const stateVector = Y.encodeStateAsUpdate(ydoc);
     socket.emit("collab:sync", {
-      update: Buffer.from(stateVector).toString("base64"),
+      update:   Buffer.from(stateVector).toString("base64"),
       language: ydoc.getMap("meta").get("language") || "cpp",
     });
 
-    // broadcast updated awareness (user joined) to everyone else
+    try {
+      const saved = await CollabRoom
+        .findOne({ roomId })
+        .populate("collabProblem", "title description difficulty points timeLimit memoryLimit testCases");
+
+      if (saved?.collabProblem) {
+        socket.emit("collab:problem:sync", { problem: saved.collabProblem });
+      }
+    } catch (err) {
+      console.error("[collab] problem sync error:", err.message);
+    }
+
     socket.to(`collab:${roomId}`).emit("collab:awareness", {
       socketId: socket.id,
       username,
@@ -83,19 +85,12 @@ export default function collabHandlers(io, socket) {
   });
 
 
-  // ── RECEIVE Yjs update from a client ─────────────────
   socket.on("collab:update", ({ roomId, update }) => {
     try {
-      const ydoc = getDoc(roomId);
-
-      // apply to server doc
+      const ydoc   = getDoc(roomId);
       const binary = Buffer.from(update, "base64");
       Y.applyUpdate(ydoc, binary, "remote");
-
-      // broadcast to all OTHER clients in room (not sender)
       socket.to(`collab:${roomId}`).emit("collab:update", { update });
-
-      // schedule debounced save
       scheduleSave(roomId, ydoc);
     } catch (err) {
       console.error("[collab] update error:", err.message);
@@ -103,31 +98,65 @@ export default function collabHandlers(io, socket) {
   });
 
 
-  // ── AWARENESS: cursor position + typing state ─────────
   socket.on("collab:awareness-update", ({ roomId, update }) => {
-    // relay to everyone else in the room
     socket.to(`collab:${roomId}`).emit("collab:awareness-update", { update });
   });
 
 
-  // ── LANGUAGE CHANGE (broadcast to all) ───────────────
   socket.on("collab:language", ({ roomId, language }) => {
     const ydoc = getDoc(roomId);
     ydoc.getMap("meta").set("language", language);
-    // tell everyone including sender
     io.to(`collab:${roomId}`).emit("collab:language", { language });
     scheduleSave(roomId, ydoc);
   });
 
 
-  // ── LEAVE collab session ──────────────────────────────
+  socket.on("collab:problem:set", async ({ roomId, problemId, userId }) => {
+    try {
+      const room = await Room.findOne({ roomId });
+      if (!room) return socket.emit("collab:error", { msg: "Room not found" });
+      if (room.creator.toString() !== userId)
+        return socket.emit("collab:error", { msg: "Only the host can set the problem" });
+
+      const problem = await Problem.findById(problemId).select("-__v");
+      if (!problem) return socket.emit("collab:error", { msg: "Problem not found" });
+
+      await CollabRoom.findOneAndUpdate(
+        { roomId },
+        { collabProblem: problemId },
+        { upsert: true }
+      );
+
+      io.to(`collab:${roomId}`).emit("collab:problem:sync", { problem });
+      console.log(`[collab] host set problem "${problem.title}" in room ${roomId}`);
+    } catch (err) {
+      console.error("[collab] problem:set error:", err.message);
+      socket.emit("collab:error", { msg: "Failed to set problem" });
+    }
+  });
+
+
+  socket.on("collab:problem:clear", async ({ roomId, userId }) => {
+    try {
+      const room = await Room.findOne({ roomId });
+      if (!room || room.creator.toString() !== userId) return;
+
+      await CollabRoom.findOneAndUpdate(
+        { roomId },
+        { collabProblem: null },
+        { upsert: true }
+      );
+
+      io.to(`collab:${roomId}`).emit("collab:problem:sync", { problem: null });
+    } catch (err) {
+      console.error("[collab] problem:clear error:", err.message);
+    }
+  });
+
+
   socket.on("collab:leave", ({ roomId, username }) => {
     socket.leave(`collab:${roomId}`);
-
-    if (socketRooms.has(socket.id)) {
-      socketRooms.get(socket.id).delete(roomId);
-    }
-
+    if (socketRooms.has(socket.id)) socketRooms.get(socket.id).delete(roomId);
     socket.to(`collab:${roomId}`).emit("collab:awareness", {
       socketId: socket.id,
       username,
@@ -136,9 +165,6 @@ export default function collabHandlers(io, socket) {
   });
 
 
-  // ── DISCONNECT: clean up awareness ───────────────────
-  // socket.rooms is unreliable after disconnect in Socket.IO v4,
-  // so we use our own socketRooms map.
   socket.on("disconnect", () => {
     const rooms = socketRooms.get(socket.id);
     if (rooms) {
