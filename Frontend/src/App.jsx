@@ -17,11 +17,11 @@ import Submissions from "./Pages/student/AllSubmissions";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AllProblems from "./Pages/student/AllProblems";
 import GlobalLeaderboard from "./Pages/student/GlobalLeaderboard";
-import Room from "./Pages/Room";
-import Rooms from "./Pages/Rooms";
-import RoomContest      from "./Pages/RoomContest";
-import RoomLeaderboard  from "./Pages/RoomLeaderboard";
-import CollabRoom from "./Pages/CollabRoom";
+import Room from "./Pages/custom room/Room";
+import Rooms from "./Pages/custom room/Rooms";
+import RoomContest      from "./Pages/custom room/RoomContest";
+import RoomLeaderboard  from "./Pages/custom room/RoomLeaderboard";
+import CollabRoom from "./Pages/custom room/CollabRoom";
 function App() {
 
   return (
