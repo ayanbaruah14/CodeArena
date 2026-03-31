@@ -237,6 +237,14 @@ export default function Room() {
                 )}
               </div>
 
+             {/* collab editor */}
+              <button
+  onClick={() => navigate(`/room/${roomId}/collab`)}
+  className="room-collab-btn"
+>
+  ⌨ COLLAB EDITOR
+</button>
+
               {/* online users */}
               <div className="p-4"
                 style={{ background:"#0d0520", border:"1px solid rgba(0,245,255,.12)",

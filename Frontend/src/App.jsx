@@ -21,6 +21,7 @@ import Room from "./Pages/Room";
 import Rooms from "./Pages/Rooms";
 import RoomContest      from "./Pages/RoomContest";
 import RoomLeaderboard  from "./Pages/RoomLeaderboard";
+import CollabRoom from "./Pages/CollabRoom";
 function App() {
 
   return (
@@ -185,6 +186,17 @@ function App() {
       </ProtectedRoute>
     }
   />
+
+  <Route 
+  path="/room/:roomId/collab" 
+  element={
+          <ProtectedRoute>
+  <CollabRoom />
+</ProtectedRoute>
+  } />
+
+
+
       </Routes>
 
     </BrowserRouter>
