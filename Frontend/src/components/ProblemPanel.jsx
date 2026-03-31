@@ -36,17 +36,23 @@ export default function ProblemPanel({ problem, isHost, onChangeProblem, onClear
       <div className="pp-header">
         <div className="pp-header-top">
           <span className="pp-panel-icon">◈</span>
-          <span className="pp-panel-label">PROBLEM STATEMENT</span>
-          <span className="pp-panel-line" />
+
+          {!collapsed && (
+            <>
+              <span className="pp-panel-label">PROBLEM STATEMENT</span>
+              <span className="pp-panel-line" />
+            </>
+          )}
+
           <div className="pp-header-actions">
-            {isHost && (
+            {!collapsed && isHost && (
               <>
                 <button className="pp-action-btn" onClick={onChangeProblem}>⇄ CHANGE</button>
                 <button className="pp-action-btn pp-action-btn--danger" onClick={onClearProblem}>✕</button>
               </>
             )}
             <button
-              className="pp-action-btn"
+              className="pp-action-btn pp-toggle-btn"
               onClick={() => setCollapsed(c => !c)}
             >
               {collapsed ? "▶" : "◀"}
@@ -176,6 +182,11 @@ const css = `
     transition: width 0.2s ease;
   }
   .pp-root--collapsed { width: 40px; }
+  .pp-root--collapsed .pp-header-top {
+    padding: 10px 0;
+    justify-content: center;
+  }
+  .pp-root--collapsed .pp-panel-icon { display: none; }
 
   /* ── panel header bar ── */
   .pp-header {
@@ -210,6 +221,17 @@ const css = `
   }
   .pp-action-btn:hover { color: #aaa; border-color: #444; }
   .pp-action-btn--danger:hover { color: #ff2d78; border-color: rgba(255,45,120,0.4); }
+  .pp-toggle-btn {
+    color: #a855f7 !important;
+    border-color: rgba(168,85,247,0.35) !important;
+    padding: 4px 9px !important;
+    font-size: 11px !important;
+  }
+  .pp-toggle-btn:hover {
+    color: #c084fc !important;
+    border-color: rgba(168,85,247,0.7) !important;
+    background: rgba(168,85,247,0.08) !important;
+  }
 
   /* ── scrollable body ── */
   .pp-body {

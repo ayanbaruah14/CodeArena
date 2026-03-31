@@ -147,7 +147,6 @@ export default function RoomContest() {
             <span className="nt-h1-l1">CREATE</span>
             <span className="nt-h1-l2" data-text="CONTEST">CONTEST</span>
           </h1>
-          <p className="nt-sub">// PROBLEMS AUTO-SELECTED FROM YOUR BANK WITHIN THE RANGE</p>
           <button onClick={() => navigate(`/room/${roomId}`)} className="nt-pp-prev-btn rc-back-override">
             ← BACK TO ROOM
           </button>
@@ -309,9 +308,6 @@ export default function RoomContest() {
         </span>
       )}
     </div>
-    <span className="font-mono text-white/20 tracking-widest" style={{ fontSize: "0.58rem" }}>
-      // problems randomly selected from your problem bank
-    </span>
   </div>
 
   {/* error */}
@@ -337,9 +333,6 @@ export default function RoomContest() {
     </div>
   );
 
-  /* ══════════════════════════════════════════════════
-     NON-HOST — waiting for host to create
-  ══════════════════════════════════════════════════ */
   if (!isHost && contest?.status === "none") return (
     <div className="rc-page rc-center">
       <div className="nt-scanlines" /><div className="nt-vignette" />
@@ -354,9 +347,6 @@ export default function RoomContest() {
     </div>
   );
 
-  /* ══════════════════════════════════════════════════
-     MAIN CONTEST VIEW  (waiting / active / ended)
-  ══════════════════════════════════════════════════ */
   return (
     <div className="rc-page">
       <div className="nt-scanlines" /><div className="nt-vignette" /><div className="nt-city" />

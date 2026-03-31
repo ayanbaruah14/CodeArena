@@ -112,11 +112,7 @@ export default function CollabRoom() {
           <span className="nt-eyebrow-tail" />
         </div>
 
-        {isHost && !contestActive && (
-          <button className="ce-nav-problem-btn" onClick={() => setPickerOpen(true)}>
-            ◈ {problem ? "CHANGE PROBLEM" : "SET PROBLEM"}
-          </button>
-        )}
+
 
         {contestActive && (
           <div className="ce-page-locked">⚡ CONTEST ACTIVE — EDITOR LOCKED</div>
