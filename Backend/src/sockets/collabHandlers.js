@@ -164,6 +164,14 @@ export default function collabHandlers(io, socket) {
     });
   });
 
+socket.on("submission-start", ({ roomId }) => {
+  io.to(`collab:${roomId}`).emit("submission-start");
+});
+
+socket.on("submission-result", ({ roomId, result }) => {
+  io.to(`collab:${roomId}`).emit("submission-result", { result });
+});
+
 
   socket.on("disconnect", () => {
     const rooms = socketRooms.get(socket.id);

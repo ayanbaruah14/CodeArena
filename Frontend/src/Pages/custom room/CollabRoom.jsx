@@ -101,22 +101,35 @@ export default function CollabRoom() {
     socket.emit("collab:problem:clear", { roomId, userId: user._id });
   }, [roomId, user]);
 
-  const handleRun = useCallback(async (code, language, problemId, setResult) => {
-    const payload = { language, code };
-    if (problemId) payload.problemId = problemId;
-    const res = await API.post("/submissions", payload);
-    const { submissionId } = res.data;
+const handleRun = useCallback(async (code, language, problemId) => {
+  const payload = { language, code };
+  if (problemId) payload.problemId = problemId;
+
+  const res = await API.post("/submissions", payload);
+  const { submissionId } = res.data;
+
+  return new Promise((resolve) => {
     const poll = setInterval(async () => {
       try {
         const r = await API.get(`/submissions/${submissionId}`);
-        setResult({ status: r.data.status, time: r.data.time });
-        if (r.data.status !== "In queue") clearInterval(poll);
+
+        const result = {
+          status: r.data.status,
+          time: r.data.time,
+        };
+
+        if (r.data.status !== "In queue") {
+          clearInterval(poll);
+          resolve(result); // 🔥 return final result
+        }
+
       } catch {
         clearInterval(poll);
-        setResult({ status: "Error" });
+        resolve({ status: "Error" });
       }
     }, 2000);
-  }, []);
+  });
+}, []);
 
   if (loading || !user) return (
     <div className="rc-page" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -144,11 +157,6 @@ export default function CollabRoom() {
           <span className="nt-eyebrow-text">ROOM {roomId} — COLLAB EDITOR</span>
           <span className="nt-eyebrow-tail" />
         </div>
-        {isHost && !contestActive && (
-          <button className="ce-nav-problem-btn" onClick={() => setPickerOpen(true)}>
-            ◈ {problem ? "CHANGE PROBLEM" : "SET PROBLEM"}
-          </button>
-        )}
         {contestActive && (
           <div className="ce-page-locked">⚡ CONTEST ACTIVE — EDITOR LOCKED</div>
         )}

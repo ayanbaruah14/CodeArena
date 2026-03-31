@@ -175,6 +175,23 @@ export default function useCollab({ roomId, username, editorRef, editorReady }) 
     socket.on("collab:awareness-update", onAwarenessUpdate);
     socket.on("collab:language",         onLanguage);
 
+const onSubmissionStart = () => {
+  window.dispatchEvent(new CustomEvent("submission-start"));
+};
+
+const onSubmissionResult = (data) => {
+  console.log("SOCKET RECEIVED:", data);
+
+  window.dispatchEvent(
+    new CustomEvent("submission-result", {
+      detail: data.result || data,
+    })
+  );
+};
+
+socket.on("submission-start", onSubmissionStart);
+socket.on("submission-result", onSubmissionResult);
+
     const sendUpdate = (update, origin) => {
       if (origin === "remote" || destroyed.current) return;
       socket.emit("collab:update", { roomId, update: toBase64(update) });
@@ -202,7 +219,8 @@ export default function useCollab({ roomId, username, editorRef, editorReady }) 
       socket.off("collab:update",           onUpdate);
       socket.off("collab:awareness-update", onAwarenessUpdate);
       socket.off("collab:language",         onLanguage);
-
+      socket.off("submission-start", onSubmissionStart);
+      socket.off("submission-result", onSubmissionResult);
       ydoc.off("update", sendUpdate);
       awareness.off("change", onAwarenessChange);
 
@@ -218,7 +236,7 @@ export default function useCollab({ roomId, username, editorRef, editorReady }) 
       setConnected(false);
       setPeers(new Map());
     };
-  }, [roomId, username]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [roomId, username]); 
 
   useEffect(() => {
     if (!editorReady || !editorRef.current || !ydocRef.current) return;

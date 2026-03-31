@@ -1,7 +1,7 @@
 import { useRef, useState, useCallback, useEffect } from "react";
 import Editor from "@monaco-editor/react";
 import useCollab from "../hooks/useCollab";
-
+import socket from "../socket";
 const LANGUAGES = [
   { value: "cpp",        label: "C++",        monaco: "cpp"        },
   { value: "python",     label: "Python",     monaco: "python"     },
@@ -25,8 +25,26 @@ export default function CollabEditor({
   const [result,      setResult]      = useState(null);
   const [copied,      setCopied]      = useState(false);
 
-  // Clear result whenever the problem changes
+
   useEffect(() => { setResult(null); }, [problem?._id]);
+
+  useEffect(() => {
+  const handleStart = () => {
+    setResult({ status: "In queue" });
+  };
+
+  const handleResult = (e) => {
+    setResult(e.detail.result || e.detail);
+  };
+
+  window.addEventListener("submission-start", handleStart);
+  window.addEventListener("submission-result", handleResult);
+
+  return () => {
+    window.removeEventListener("submission-start", handleStart);
+    window.removeEventListener("submission-result", handleResult);
+  };
+}, []);
 
   const { connected, peers, color, language, changeLanguage } = useCollab({
     roomId,
@@ -60,19 +78,32 @@ export default function CollabEditor({
     editorRef.current?.updateOptions({ readOnly: contestActive });
   }, [contestActive]);
 
-  const handleRun = useCallback(async () => {
-    if (!editorRef.current || submitting || contestActive || !problem) return;
-    const code = editorRef.current.getValue();
-    setSubmitting(true);
-    setResult({ status: "In queue" });
-    try {
-      await onRun?.(code, language, problem._id, setResult);
-    } catch {
-      setResult({ status: "submission failed" });
-    } finally {
-      setSubmitting(false);
-    }
-  }, [language, submitting, contestActive, onRun, problem]);
+const handleRun = useCallback(async () => {
+  if (!editorRef.current || submitting || contestActive || !problem) return;
+
+  const code = editorRef.current.getValue();
+
+  setSubmitting(true);
+
+  socket.emit("submission-start", { roomId });
+
+  try {
+    const res = await onRun?.(code, language, problem._id);
+
+    socket.emit("submission-result", {
+      roomId,
+      result:res
+    });
+
+  } catch {
+    socket.emit("submission-result", {
+      roomId,
+      result: { status: "submission failed" },
+    });
+  } finally {
+    setSubmitting(false);
+  }
+}, [language, submitting, contestActive, onRun, problem, roomId]);
 
   const copyLink = () => {
     navigator.clipboard.writeText(window.location.href).then(() => {
