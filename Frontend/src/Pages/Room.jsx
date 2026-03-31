@@ -148,7 +148,7 @@ export default function Room() {
           <div className="flex items-center justify-between py-2"
             style={{ borderBottom: "1px solid rgba(255,45,120,.15)" }}>
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/rooms")}>
+              <div className="flex items-center gap-2 cursor-pointer">
                 <div className="flex items-center justify-center w-8 h-8"
                   style={{ border:"1px solid rgba(255,45,120,.4)", background:"rgba(255,45,120,.08)",
                     fontFamily:"'Bebas Neue',sans-serif", fontSize:".7rem", color:"#ff2d78",
