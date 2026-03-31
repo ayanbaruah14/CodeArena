@@ -1,28 +1,34 @@
-import { useState } from "react";
-
 const DIFF_COLOR = { easy: "#39ff14", medium: "#ffb800", hard: "#ff2d78" };
 const DIFF_LABEL = { easy: "EASY", medium: "MED", hard: "HARD" };
 
-export default function ProblemPanel({ problem, isHost, onChangeProblem, onClearProblem }) {
-  const [collapsed, setCollapsed] = useState(false);
-
+export default function ProblemPanel({
+  problem,
+  isHost,
+  onChangeProblem,
+  onClearProblem,
+  collapsed,
+  onToggleCollapse,
+}) {
   if (!problem) {
     return (
-      <div className="pp-empty">
-        <div className="pp-empty-inner">
-          <span className="pp-empty-icon">◈</span>
-          <p className="pp-empty-title">NO PROBLEM SELECTED</p>
-          {isHost ? (
-            <>
-              <p className="pp-empty-sub">Pick a problem for your team to solve together.</p>
-              <button className="pp-pick-btn" onClick={onChangeProblem}>
-                ⊕ CHOOSE PROBLEM
-              </button>
-            </>
-          ) : (
-            <p className="pp-empty-sub">Waiting for the host to select a problem...</p>
-          )}
-        </div>
+      <div className="pp-empty" style={{ width: collapsed ? 40 : "100%", height: "100%" }}>
+        {!collapsed && (
+          <div className="pp-empty-inner">
+            <span className="pp-empty-icon">◈</span>
+            <p className="pp-empty-title">NO PROBLEM SELECTED</p>
+            {isHost ? (
+              <>
+                <p className="pp-empty-sub">Pick a problem for your team to solve together.</p>
+                <button className="pp-pick-btn" onClick={onChangeProblem}>⊕ CHOOSE PROBLEM</button>
+              </>
+            ) : (
+              <p className="pp-empty-sub">Waiting for the host to select a problem...</p>
+            )}
+          </div>
+        )}
+        <button className="pp-toggle-btn pp-toggle-float" onClick={onToggleCollapse}>
+          {collapsed ? "▶" : "◀"}
+        </button>
         <style>{css}</style>
       </div>
     );
@@ -31,19 +37,13 @@ export default function ProblemPanel({ problem, isHost, onChangeProblem, onClear
   const sampleCases = problem.testCases?.slice(0, 3) || [];
 
   return (
-    <div className={`pp-root ${collapsed ? "pp-root--collapsed" : ""}`}>
+    <div className="pp-root" style={{ width: "100%", height: "100%" }}>
 
       <div className="pp-header">
         <div className="pp-header-top">
-          <span className="pp-panel-icon">◈</span>
-
-          {!collapsed && (
-            <>
-              <span className="pp-panel-label">PROBLEM STATEMENT</span>
-              <span className="pp-panel-line" />
-            </>
-          )}
-
+          {!collapsed && <span className="pp-panel-icon">◈</span>}
+          {!collapsed && <span className="pp-panel-label">PROBLEM STATEMENT</span>}
+          {!collapsed && <span className="pp-panel-line" />}
           <div className="pp-header-actions">
             {!collapsed && isHost && (
               <>
@@ -51,10 +51,7 @@ export default function ProblemPanel({ problem, isHost, onChangeProblem, onClear
                 <button className="pp-action-btn pp-action-btn--danger" onClick={onClearProblem}>✕</button>
               </>
             )}
-            <button
-              className="pp-action-btn pp-toggle-btn"
-              onClick={() => setCollapsed(c => !c)}
-            >
+            <button className="pp-action-btn pp-toggle-btn" onClick={onToggleCollapse}>
               {collapsed ? "▶" : "◀"}
             </button>
           </div>
@@ -63,7 +60,6 @@ export default function ProblemPanel({ problem, isHost, onChangeProblem, onClear
 
       {!collapsed && (
         <div className="pp-body">
-
           <div className="pp-topbar">
             <div className="pp-title-row">
               <h1 className="pp-title">{problem.title}</h1>
@@ -99,7 +95,6 @@ export default function ProblemPanel({ problem, isHost, onChangeProblem, onClear
                 <span className="pp-tc-section-count">{sampleCases.length}</span>
                 <span className="pp-tc-section-line" />
               </div>
-
               {sampleCases.map((tc, i) => (
                 <div key={i} className="pp-tc-card">
                   <div className="pp-tc-card-top" />
@@ -134,7 +129,6 @@ export default function ProblemPanel({ problem, isHost, onChangeProblem, onClear
               ))}
             </div>
           )}
-
         </div>
       )}
 
@@ -146,10 +140,11 @@ export default function ProblemPanel({ problem, isHost, onChangeProblem, onClear
 const css = `
   /* ── empty state ── */
   .pp-empty {
-    width: 300px; flex-shrink: 0;
     background: #06030f;
     border-right: 1px solid rgba(255,255,255,0.06);
-    display: flex; align-items: center; justify-content: center;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
   }
   .pp-empty-inner { text-align: center; padding: 24px 20px; }
   .pp-empty-icon {
@@ -171,35 +166,29 @@ const css = `
     transition: background 0.15s, border-color 0.15s;
   }
   .pp-pick-btn:hover { background: rgba(0,245,255,0.08); border-color: #00f5ff; }
+  .pp-toggle-float {
+    position: absolute; top: 10px; right: 8px;
+  }
 
   /* ── root panel ── */
   .pp-root {
-    width: 380px; flex-shrink: 0;
     background: #06030f;
     border-right: 1px solid rgba(255,255,255,0.06);
     display: flex; flex-direction: column;
     overflow: hidden;
-    transition: width 0.2s ease;
   }
-  .pp-root--collapsed { width: 40px; }
-  .pp-root--collapsed .pp-header-top {
-    padding: 10px 0;
-    justify-content: center;
-  }
-  .pp-root--collapsed .pp-panel-icon { display: none; }
 
-  /* ── panel header bar ── */
+  /* ── header bar ── */
   .pp-header {
     flex-shrink: 0;
     border-bottom: 1px solid rgba(255,255,255,0.05);
   }
   .pp-header-top {
     display: flex; align-items: center; gap: 8px;
-    padding: 10px 12px;
+    padding: 10px 12px; min-height: 38px;
   }
   .pp-panel-icon {
-    color: #a855f7;
-    filter: drop-shadow(0 0 6px #a855f7);
+    color: #a855f7; filter: drop-shadow(0 0 6px #a855f7);
     font-size: 13px; flex-shrink: 0;
   }
   .pp-panel-label {
@@ -210,13 +199,13 @@ const css = `
     flex: 1; height: 1px;
     background: linear-gradient(90deg, rgba(168,85,247,0.3), transparent);
   }
-  .pp-header-actions { display: flex; gap: 4px; flex-shrink: 0; }
+  .pp-header-actions { display: flex; gap: 4px; flex-shrink: 0; margin-left: auto; }
   .pp-action-btn {
     background: none; border: 1px solid rgba(255,255,255,0.08);
     border-radius: 3px; color: #444; cursor: pointer;
     font-family: 'Share Tech Mono', monospace; font-size: 9px;
     letter-spacing: 0.08em; padding: 3px 7px;
-    transition: color 0.15s, border-color 0.15s;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
     white-space: nowrap;
   }
   .pp-action-btn:hover { color: #aaa; border-color: #444; }
@@ -239,16 +228,11 @@ const css = `
     scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.08) transparent;
   }
   .pp-body::-webkit-scrollbar { width: 3px; }
-  .pp-body::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.08); border-radius: 2px;
-  }
+  .pp-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
 
   /* ── title block ── */
   .pp-topbar { margin-bottom: 16px; }
-  .pp-title-row {
-    display: flex; align-items: flex-start; gap: 10px;
-    margin-bottom: 8px;
-  }
+  .pp-title-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
   .pp-title {
     font-family: 'Bebas Neue', 'Share Tech Mono', sans-serif;
     font-size: 1.3rem; color: #e8e8f0; margin: 0;
@@ -262,9 +246,7 @@ const css = `
     text-shadow: 0 0 8px rgba(255,184,0,0.4);
     border-radius: 2px; white-space: nowrap; flex-shrink: 0;
   }
-  .pp-meta-row {
-    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-  }
+  .pp-meta-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .pp-diff-badge {
     font-family: 'Share Tech Mono', monospace; font-size: 9px;
     letter-spacing: 0.12em; border: 1px solid;
@@ -279,65 +261,43 @@ const css = `
   .pp-description {
     font-family: 'Share Tech Mono', monospace; font-size: 12px;
     color: rgba(255,255,255,0.65); line-height: 1.8;
-    white-space: pre-wrap;
-    margin-bottom: 20px;
-    border-left: 2px solid rgba(168,85,247,0.2);
-    padding-left: 12px;
+    white-space: pre-wrap; margin-bottom: 20px;
+    border-left: 2px solid rgba(168,85,247,0.2); padding-left: 12px;
   }
 
-  /* ── test cases section ── */
+  /* ── test cases ── */
   .pp-tc-section { margin-top: 4px; }
   .pp-tc-section-label {
     display: flex; align-items: center; gap: 8px;
     font-family: 'Share Tech Mono', monospace; font-size: 9px;
-    letter-spacing: 0.15em; color: rgba(255,255,255,0.3);
-    margin-bottom: 10px;
+    letter-spacing: 0.15em; color: rgba(255,255,255,0.3); margin-bottom: 10px;
   }
   .pp-tc-section-icon { color: #ffb800; font-size: 11px; }
   .pp-tc-section-count {
     background: rgba(255,184,0,0.1); border: 1px solid rgba(255,184,0,0.25);
-    color: #ffb800; font-size: 9px; border-radius: 3px;
-    padding: 1px 6px;
+    color: #ffb800; font-size: 9px; border-radius: 3px; padding: 1px 6px;
   }
   .pp-tc-section-line {
     flex: 1; height: 1px;
     background: linear-gradient(90deg, rgba(255,255,255,0.06), transparent);
   }
-
-  /* ── test case card ── */
   .pp-tc-card {
-    background: rgba(255,255,255,0.02);
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 4px; margin-bottom: 10px;
-    overflow: hidden; position: relative;
+    background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 4px; margin-bottom: 10px; overflow: hidden; position: relative;
   }
   .pp-tc-card-top {
     height: 2px;
     background: linear-gradient(90deg, rgba(0,245,255,0.4), rgba(168,85,247,0.4), transparent);
   }
-  .pp-tc-case-badge {
-    display: flex; align-items: center; gap: 8px;
-    padding: 6px 12px 4px;
-  }
+  .pp-tc-case-badge { display: flex; align-items: center; gap: 8px; padding: 6px 12px 4px; }
   .pp-tc-case-num {
     font-family: 'Share Tech Mono', monospace; font-size: 9px;
     letter-spacing: 0.15em; color: rgba(255,255,255,0.25);
   }
-  .pp-tc-case-line {
-    flex: 1; height: 1px;
-    background: rgba(255,255,255,0.05);
-  }
-
-  .pp-tc-io-row {
-    display: flex; align-items: flex-start; gap: 8px;
-    padding: 0 12px 12px;
-  }
+  .pp-tc-case-line { flex: 1; height: 1px; background: rgba(255,255,255,0.05); }
+  .pp-tc-io-row { display: flex; align-items: flex-start; gap: 8px; padding: 0 12px 12px; }
   .pp-tc-io-block { flex: 1; min-width: 0; }
-  .pp-tc-io-arrow {
-    color: rgba(255,255,255,0.15); font-size: 14px;
-    margin-top: 22px; flex-shrink: 0;
-  }
-
+  .pp-tc-io-arrow { color: rgba(255,255,255,0.15); font-size: 14px; margin-top: 22px; flex-shrink: 0; }
   .pp-tc-io-label {
     display: flex; align-items: center; gap: 5px;
     font-family: 'Share Tech Mono', monospace; font-size: 9px;
@@ -345,28 +305,20 @@ const css = `
   }
   .pp-tc-io-label--input  { color: rgba(0,245,255,0.6); }
   .pp-tc-io-label--output { color: rgba(57,255,20,0.6); }
-
-  .pp-tc-io-dot {
-    width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0;
-  }
+  .pp-tc-io-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
   .pp-tc-io-dot--cyan  { background: #00f5ff; box-shadow: 0 0 4px #00f5ff; }
   .pp-tc-io-dot--green { background: #39ff14; box-shadow: 0 0 4px #39ff14; }
-
   .pp-tc-pre {
-    margin: 0; padding: 8px 10px;
-    border-radius: 3px; font-family: 'Share Tech Mono', monospace;
-    font-size: 11px; line-height: 1.6;
-    white-space: pre-wrap; word-break: break-all;
-    overflow-x: auto;
+    margin: 0; padding: 8px 10px; border-radius: 3px;
+    font-family: 'Share Tech Mono', monospace; font-size: 11px; line-height: 1.6;
+    white-space: pre-wrap; word-break: break-all; overflow-x: auto;
   }
   .pp-tc-pre--cyan {
-    background: rgba(0,245,255,0.04);
-    border: 1px solid rgba(0,245,255,0.12);
+    background: rgba(0,245,255,0.04); border: 1px solid rgba(0,245,255,0.12);
     color: rgba(0,245,255,0.85);
   }
   .pp-tc-pre--green {
-    background: rgba(57,255,20,0.04);
-    border: 1px solid rgba(57,255,20,0.12);
+    background: rgba(57,255,20,0.04); border: 1px solid rgba(57,255,20,0.12);
     color: rgba(57,255,20,0.85);
   }
   .pp-tc-empty { color: rgba(255,255,255,0.2); font-style: italic; }
