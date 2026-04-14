@@ -1,18 +1,24 @@
 import { useEffect, useState } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import API from "../api/api";
 
 function ProtectedRoute({ children }) {
   const [loading, setLoading] = useState(true);
   const [isAuth, setIsAuth] = useState(false);
+  const location = useLocation(); // ✅ ADD THIS
 
   useEffect(() => {
+    // ✅ DO NOT RUN ON LOGIN / REGISTER
+    if (location.pathname === "/login" || location.pathname === "/register") {
+      setLoading(false);
+      return;
+    }
+
     const checkAuth = async () => {
       try {
-        await API.get("/auth/me"); 
+        await API.get("/auth/me");
         setIsAuth(true);
       } catch (err) {
-        console.log(err);
         setIsAuth(false);
       } finally {
         setLoading(false);
@@ -20,11 +26,14 @@ function ProtectedRoute({ children }) {
     };
 
     checkAuth();
-  }, []);
+  }, [location.pathname]); // ✅ IMPORTANT
 
   if (loading) return <div>Loading...</div>;
 
-  if (!isAuth) return <Navigate to="/login" />;
+  // ✅ PREVENT REDIRECT LOOP
+  if (!isAuth && location.pathname !== "/login") {
+    return <Navigate to="/login" replace />;
+  }
 
   return children;
 }
