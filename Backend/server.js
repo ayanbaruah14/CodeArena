@@ -31,12 +31,12 @@ const globalLimiter = rateLimit({
   message: { msg: "Too many requests, try again later" }
 });
 
-// app.use((req, res, next) => {
-//   if (req.path.startsWith("/socket.io")) {
-//     return next(); // 🚀 allow socket
-//   }
-//   globalLimiter(req, res, next);
-// });
+app.use((req, res, next) => {
+  if (req.path.startsWith("/socket.io")) {
+    return next(); // 🚀 allow socket
+  }
+  globalLimiter(req, res, next);
+});
 
 app.use(cors({
   origin: "http://localhost:5173",
