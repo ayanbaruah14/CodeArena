@@ -33,7 +33,7 @@ const globalLimiter = rateLimit({
 
 app.use((req, res, next) => {
   if (req.path.startsWith("/socket.io")) {
-    return next(); // 🚀 allow socket
+    return next();
   }
   globalLimiter(req, res, next);
 });
