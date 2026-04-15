@@ -46,6 +46,9 @@ export const register = async (req, res) => {
     res.status(500).json({ msg: "Server error" });
   }
 };
+
+
+
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -63,14 +66,16 @@ if (!user.password) {
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
     res.cookie("token", accessToken, {
-      httpOnly: true,
+      httpOnly: false,
       secure: false, 
       sameSite: "lax",
-      maxAge: 15 * 60 * 1000
+      maxAge: 15 * 60 * 1000,
+       path: "/"  
+
     });
 
     res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
+      httpOnly: false,
       secure: false, 
       sameSite: "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000
@@ -216,6 +221,7 @@ export const refresh = (req, res) => {
 };
 
 export const logout = (req, res) => {
+  console.log("Logging out user:", req.user?.id);
   res.clearCookie("token");
   res.clearCookie("refreshToken");
 

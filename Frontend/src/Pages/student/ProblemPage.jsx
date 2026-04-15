@@ -20,13 +20,9 @@ function ProblemPage() {
   const [prevSubs, setPrevSubs]         = useState([]);
   const [showPrevSubs, setShowPrevSubs] = useState(false);
 
-  // ── active contest context ──
-  // contestId  → from URL (normal /contest/:contestId/problem/:id route)
-  // activeContest → from localStorage (room contest)
   const [activeContest, setActiveContest] = useState(null);
   const inContest = !!(contestId || activeContest?.roomId);
 
-  /* fetch current user */
   useEffect(() => {
     API.get("/auth/me", { withCredentials: true })
       .then(res => setMyId(res.data.user._id?.toString()))
@@ -45,9 +41,8 @@ function ProblemPage() {
     API.get(`/problems/${problemId}`).then(res => setProblem(res.data));
   }, [problemId]);
 
-  // Load previous submissions — skip entirely when in any contest
   useEffect(() => {
-    if (inContest) return;                      // ← contest mode: no prev subs
+    if (inContest) return;                      
     API.get("/submissions/user")
       .then(res => {
         const allSubs = res.data.filter(s =>
@@ -365,11 +360,13 @@ function ProblemPage() {
                 <div className={`nt-result-box ${rc.cls}`}>
                   <span className="nt-result-icon">{rc.icon}</span>
                   <span className="nt-result-label">{rc.label.toUpperCase()}</span>
-                  {rc.cls === "nt-result--queue" && (
+                  {rc.cls === "nt-result--queue" && submitting && (
                     <span className="nt-result-dots">
                       <span>.</span><span>.</span><span>.</span>
                     </span>
                   )}
+
+                  
                 </div>
               )}
             </div>

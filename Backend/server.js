@@ -1,4 +1,4 @@
-import express from "express";
+import express, { urlencoded } from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -18,14 +18,25 @@ import collabHandlers from "./src/sockets/collabHandlers.js";
 dotenv.config();
 
 const app = express();
+process.on("uncaughtException", (err) => {
+  console.error("UNCAUGHT:", err);
+});
 
+process.on("unhandledRejection", (err) => {
+  console.error("UNHANDLED:", err);
+});
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 200,
+  max: 20000,
   message: { msg: "Too many requests, try again later" }
 });
 
-app.use(globalLimiter);
+app.use((req, res, next) => {
+  if (req.path.startsWith("/socket.io")) {
+    return next(); // 🚀 allow socket
+  }
+  globalLimiter(req, res, next);
+});
 
 app.use(cors({
   origin: "http://localhost:5173",
@@ -69,6 +80,6 @@ io.on("connection", (socket) => {
 });
 
 
-server.listen(5000, () => {
-  console.log("Server running on port 5000");
+server.listen(5500, () => {
+  console.log("Server running on port 5500");
 });
