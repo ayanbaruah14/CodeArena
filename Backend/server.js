@@ -1,3 +1,4 @@
+
 import express, { urlencoded } from "express";
 import mongoose from "mongoose";
 import cors from "cors";
@@ -46,8 +47,13 @@ app.use(cors({
 app.use(cookieParser());
 app.use(express.json());
 
+try {
 await mongoose.connect(process.env.MONGO_URI);
-console.log("MongoDB Connected");
+
+  console.log("MongoDB Connected");
+} catch (err) {
+  console.error("Mongo Error:", err);
+}
 
 app.use("/api/auth", authRoutes);
 app.use("/api/contests", contestRoutes);
