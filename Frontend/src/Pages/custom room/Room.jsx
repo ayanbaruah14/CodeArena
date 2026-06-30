@@ -37,11 +37,11 @@ export default function Room() {
     socket.on("userTyping",    (username) => setTypingUser(username));
     socket.on("userStopTyping", () => setTypingUser(null));
 
-    socket.emit("joinRoom", { roomId, userId, username: user.username });
-
     socket.on("messageHistory", (history) => {
       setMessages(history);
     });
+
+    socket.emit("joinRoom", { roomId, userId, username: user.username });
 
     socket.on("userJoined", (data) => {
       setUsers(data.users);
