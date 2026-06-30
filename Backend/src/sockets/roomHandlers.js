@@ -46,6 +46,8 @@ export default function roomHandlers(io, socket) {
 
       const exists = room.users.find(u => u.userId.toString() === userId);
 
+      socket.join(roomId);
+
       if (!exists) {
         room.users.push({ userId, username });
 
@@ -75,8 +77,6 @@ export default function roomHandlers(io, socket) {
           creator: room.creator,
         });
       }
-
-      socket.join(roomId);
 
       socket.emit("messageHistory", room.messages);
 
