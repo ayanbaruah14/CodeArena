@@ -2,6 +2,17 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import { OAuth2Client } from "google-auth-library";
+
+const isProd = process.env.NODE_ENV === "production";
+
+const cookieOptions = (maxAge) => ({
+  httpOnly: true,
+  secure: isProd,
+  sameSite: isProd ? "none" : "lax",
+  maxAge,
+  path: "/"
+});
+
 const generateAccessToken = (user) => {
   return jwt.sign(
     { id: user._id, role: user.role },
@@ -65,21 +76,9 @@ if (!user.password) {
 
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
-    res.cookie("token", accessToken, {
-      httpOnly: false,
-      secure: false, 
-      sameSite: "lax",
-      maxAge: 15 * 60 * 1000,
-       path: "/"  
+    res.cookie("token", accessToken, cookieOptions(15 * 60 * 1000));
 
-    });
-
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: false,
-      secure: false, 
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000
-    });
+    res.cookie("refreshToken", refreshToken, cookieOptions(7 * 24 * 60 * 60 * 1000));
 
     res.json({
       msg: "Login successful",
@@ -140,19 +139,9 @@ export const googleLogin = async (req, res) => {
 
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
-    res.cookie("token", accessToken, {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      maxAge: 15 * 60 * 1000
-    });
+    res.cookie("token", accessToken, cookieOptions(15 * 60 * 1000));
 
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000
-    });
+    res.cookie("refreshToken", refreshToken, cookieOptions(7 * 24 * 60 * 60 * 1000));
 
     res.json({
       msg: "Google login successful",
@@ -206,12 +195,7 @@ export const refresh = (req, res) => {
       { expiresIn: "15m" }
     );
 
-    res.cookie("token", newAccessToken, {
-      httpOnly: true,
-      secure: false, 
-      sameSite: "lax",
-      maxAge: 15 * 60 * 1000
-    });
+    res.cookie("token", newAccessToken, cookieOptions(15 * 60 * 1000));
 
     res.json({ msg: "Token refreshed" });
 
@@ -222,8 +206,8 @@ export const refresh = (req, res) => {
 
 export const logout = (req, res) => {
   console.log("Logging out user:", req.user?.id);
-  res.clearCookie("token");
-  res.clearCookie("refreshToken");
+  res.clearCookie("token", { path: "/", secure: isProd, sameSite: isProd ? "none" : "lax" });
+  res.clearCookie("refreshToken", { path: "/", secure: isProd, sameSite: isProd ? "none" : "lax" });
 
   res.json({ msg: "Logged out successfully" });
 };

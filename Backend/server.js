@@ -19,6 +19,14 @@ import collabHandlers from "./src/sockets/collabHandlers.js";
 dotenv.config();
 
 const app = express();
+const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:5173";
+const ALLOWED_ORIGINS = [
+  CLIENT_URL,
+  "http://localhost:5173",
+  "https://code-arena-silk.vercel.app"
+].filter(Boolean);
+const PORT = process.env.PORT || 5500;
+
 process.on("uncaughtException", (err) => {
   console.error("UNCAUGHT:", err);
 });
@@ -39,8 +47,17 @@ app.use((req, res, next) => {
   globalLimiter(req, res, next);
 });
 
+// Health check for Render
+app.get("/health", (req, res) => res.status(200).json({ status: "ok" }));
+
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: function (origin, callback) {
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
   credentials: true
 }));
 
@@ -67,9 +84,10 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: ALLOWED_ORIGINS,
     credentials: true
-  }
+  },
+  transports: ["websocket", "polling"]
 });
 
 const rooms = {};
@@ -86,6 +104,6 @@ io.on("connection", (socket) => {
 });
 
 
-server.listen(5500, () => {
-  console.log("Server running on port 5500");
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });

@@ -1,7 +1,9 @@
 import axios from "axios";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5500";
+
 const API = axios.create({
-  baseURL: "http://localhost:5500/api",
+  baseURL: `${API_URL}/api`,
   withCredentials: true
 });
 
@@ -21,7 +23,7 @@ if (
 
   try {
     await axios.post(
-      "http://localhost:5500/api/auth/refresh",
+      `${API_URL}/api/auth/refresh`,
       {},
       { withCredentials: true }
     );
