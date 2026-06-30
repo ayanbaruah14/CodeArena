@@ -59,6 +59,21 @@ export default function roomHandlers(io, socket) {
         }
 
         await room.save();
+
+        io.to(roomId).emit("userJoined", {
+          users:   room.users,
+          creator: room.creator,
+        });
+
+        io.to(roomId).emit("receiveMessage", {
+          system:  true,
+          message: `${username} joined the room`,
+        });
+      } else {
+        socket.emit("userJoined", {
+          users:   room.users,
+          creator: room.creator,
+        });
       }
 
       socket.join(roomId);
@@ -78,16 +93,6 @@ export default function roomHandlers(io, socket) {
           maxPoints:  room.contest.maxPoints,
         });
       }
-
-      io.to(roomId).emit("userJoined", {
-        users:   room.users,
-        creator: room.creator,
-      });
-
-      io.to(roomId).emit("receiveMessage", {
-        system:  true,
-        message: `${username} joined the room`,
-      });
 
     } catch (err) {
       console.error(err);
