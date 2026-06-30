@@ -39,6 +39,10 @@ export default function Room() {
 
     socket.emit("joinRoom", { roomId, userId, username: user.username });
 
+    socket.on("messageHistory", (history) => {
+      setMessages(history);
+    });
+
     socket.on("userJoined", (data) => {
       setUsers(data.users);
       setCreator(data.creator);
@@ -63,6 +67,7 @@ export default function Room() {
       socket.off("userJoined");
       socket.off("userLeft");
       socket.off("receiveMessage");
+      socket.off("messageHistory");
       socket.off("roomEnded");
       socket.off("userTyping");
       socket.off("userStopTyping");
