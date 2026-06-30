@@ -1,12 +1,20 @@
 import { Queue } from "bullmq";
 import Redis from "ioredis";
 
-const connection = new Redis(process.env.REDIS_URL || "redis://127.0.0.1:6379", {
-  maxRetriesPerRequest: null
-});
+let submissionQueue = null;
 
-const submissionQueue = new Queue("submissionQueue", {
-  connection
-});
+if (process.env.REDIS_URL) {
+  try {
+    const connection = new Redis(process.env.REDIS_URL, {
+      maxRetriesPerRequest: null
+    });
+    submissionQueue = new Queue("submissionQueue", { connection });
+    console.log("Redis connected — submission queue active");
+  } catch (err) {
+    console.warn("Redis connection failed — submissions disabled:", err.message);
+  }
+} else {
+  console.warn("No REDIS_URL set — submission queue disabled");
+}
 
-export default submissionQueue;
+export default submissionQueue;

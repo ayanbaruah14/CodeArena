@@ -5,6 +5,10 @@ export const submitCode = async (req,res)=>{
 
   const {code,language,problemId,contestId} = req.body;
 
+  if (!submissionQueue) {
+    return res.status(503).json({ msg: "Code execution is currently unavailable" });
+  }
+
   const submission = await Submission.create({
     user:req.user.id,
     problem:problemId,
